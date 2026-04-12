@@ -2,6 +2,7 @@ package org.smokeslate.sneakyresource;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,7 @@ final class SyncService {
 
         Path packZip = null;
         String sha1 = null;
+        String resourcePackUrl = null;
         Path datapackDestination = null;
 
         if (syncResourcePack) {
@@ -51,6 +53,8 @@ final class SyncService {
                 ensureParentDirectory(sha1Output);
                 Files.writeString(sha1Output, sha1);
             }
+
+            resourcePackUrl = configuredPackUrl();
         }
 
         if (syncDatapack) {
@@ -64,7 +68,7 @@ final class SyncService {
             Bukkit.getScheduler().runTask(this.plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "minecraft:reload"));
         }
 
-        return new SyncReport(packZip, sha1, datapackDestination, runReload);
+        return new SyncReport(packZip, sha1, resourcePackUrl, datapackDestination, runReload);
     }
 
     private Path resolveConfiguredPath(final String pathKey) {
@@ -98,6 +102,28 @@ final class SyncService {
         if (parent != null) {
             Files.createDirectories(parent);
         }
+    }
+
+    @Nullable
+    String configuredPackUrl() {
+        final String configured = this.plugin.getConfig().getString("resource-pack.public-url");
+        if (configured == null || configured.isBlank()) {
+            return null;
+        }
+        return configured.trim();
+    }
+
+    boolean isPackRequired() {
+        return this.plugin.getConfig().getBoolean("resource-pack.required", false);
+    }
+
+    @Nullable
+    String configuredPackPrompt() {
+        final String configured = this.plugin.getConfig().getString("resource-pack.prompt");
+        if (configured == null || configured.isBlank()) {
+            return null;
+        }
+        return configured;
     }
 
     private void mirrorDirectory(final Path source, final Path destination) throws IOException {

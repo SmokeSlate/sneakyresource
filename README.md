@@ -7,6 +7,7 @@ The plugin reads the repo checkout directly from disk, then:
 - zips `sasquatchresourcepack/` into a server-ready pack zip
 - writes a SHA-1 file for that zip
 - mirrors `datapack/` into your Paper world datapacks folder
+- sends the resource pack to joining players through Paper
 - runs `minecraft:reload` after syncing
 
 ## Commands
@@ -47,3 +48,12 @@ parent/
 ```
 
 The plugin jar will be in `build/libs/`.
+
+## Resource Pack Delivery
+
+Set `resource-pack.public-url` in `plugins/SneakyResource/config.yml` to the public download URL for the generated zip.
+
+When that URL is configured, the plugin will:
+
+- send the pack to players on join via the Paper API
+- optionally mark the pack as required

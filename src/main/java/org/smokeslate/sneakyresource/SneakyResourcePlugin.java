@@ -19,6 +19,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         this.syncService = new SyncService(this);
         Objects.requireNonNull(getCommand("sneakyresource"), "sneakyresource command is missing from plugin.yml")
             .setExecutor(this);
+        getServer().getPluginManager().registerEvents(new PlayerResourcePackListener(this), this);
 
         if (getConfig().getBoolean("sync-on-startup", true)) {
             try {
@@ -72,8 +73,19 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         if (this.lastReport.resourcePackSha1() != null) {
             sender.sendMessage(Component.text("Pack sha1: " + this.lastReport.resourcePackSha1()));
         }
+        if (this.lastReport.resourcePackUrl() != null) {
+            sender.sendMessage(Component.text("Pack url: " + this.lastReport.resourcePackUrl()));
+        }
         if (this.lastReport.datapackDestination() != null) {
             sender.sendMessage(Component.text("Datapack: " + this.lastReport.datapackDestination()));
         }
+    }
+
+    SyncService getSyncService() {
+        return this.syncService;
+    }
+
+    SyncReport getLastReport() {
+        return this.lastReport;
     }
 }
