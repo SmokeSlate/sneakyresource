@@ -17,19 +17,28 @@ The plugin reads the repo checkout directly from disk, then:
 
 ## Default layout
 
-The default `config.yml` assumes this repo is checked out next to your Paper server folder:
+The default `config.yml` assumes this repo is checked out inside your Paper server folder:
 
 ```text
-parent/
+paper-server/
   sneakyresource/
-  paper-server/
+  plugins/
+  world/
 ```
 
 With that layout:
 
-- `../sneakyresource/sasquatchresourcepack` is the resource pack source
-- `../sneakyresource/datapack` is the datapack source
+- `sneakyresource/sasquatchresourcepack` is the resource pack source
+- `sneakyresource/datapack` is the datapack source
 - `world/datapacks/sneakyresource` is the live server datapack destination
+
+The plugin also falls back to the older sibling layout automatically:
+
+```text
+parent/
+  paper-server/
+  sneakyresource/
+```
 
 ## Build
 

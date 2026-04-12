@@ -74,7 +74,17 @@ final class SyncService {
         }
 
         final Path path = Path.of(configured);
-        return path.isAbsolute() ? path.normalize() : this.serverRoot.resolve(path).normalize();
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+
+        final Path resolved = this.serverRoot.resolve(path).normalize();
+        if (Files.exists(resolved) || !configured.startsWith("sneakyresource/")) {
+            return resolved;
+        }
+
+        // Backward-compatible fallback for a repo checked out next to the server root.
+        return this.serverRoot.resolveSibling(path).normalize();
     }
 
     private void verifyDirectory(final Path path, final String label) {
