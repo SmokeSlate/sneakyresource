@@ -12,6 +12,7 @@ The plugin reads the repo checkout directly from disk, then:
 ## Commands
 
 - `/sneakyresource sync`
+- `/sneakyresource reload`
 - `/sneakyresource status`
 
 ## Default layout

@@ -36,10 +36,17 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
 
         switch (subcommand) {
             case "sync" -> runSync(sender, true);
+            case "reload" -> reloadPluginConfig(sender);
             case "status" -> showStatus(sender);
-            default -> sender.sendMessage(Component.text("Usage: /sneakyresource <sync|status>"));
+            default -> sender.sendMessage(Component.text("Usage: /sneakyresource <sync|reload|status>"));
         }
         return true;
+    }
+
+    private void reloadPluginConfig(final CommandSender sender) {
+        reloadConfig();
+        this.syncService = new SyncService(this);
+        sender.sendMessage(Component.text("SneakyResource config reloaded."));
     }
 
     private void runSync(final CommandSender sender, final boolean allowReload) {

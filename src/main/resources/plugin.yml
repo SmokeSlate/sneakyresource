@@ -12,4 +12,4 @@ commands:
   sneakyresource:
     description: Sync the configured resource pack and datapack.
     permission: sneakyresource.sync
-    usage: "/sneakyresource <sync|status>"
+    usage: "/sneakyresource <sync|reload|status>"
