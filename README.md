@@ -56,8 +56,8 @@ The plugin jar will be in `build/libs/`.
 
 By default the plugin uses GitHub-hosted URLs:
 
-- `https://smokeslate.github.io/sneakyresource/sasquatchresourcepack.zip`
-- `https://smokeslate.github.io/sneakyresource/sasquatchresourcepack.zip.sha1`
+- `http://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip`
+- `http://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip.sha1`
 
 If you prefer, you can still set your own `resource-pack.public-url` and `resource-pack.sha1-url` in `plugins/SneakyResource/config.yml`.
 
