@@ -65,10 +65,11 @@ final class SyncService {
                 Files.writeString(sha1Output, sha1);
             }
 
-            resourcePackUrl = configuredPackUrl();
+            resourcePackUrl = withCacheBuster(configuredPackUrl(), sha1);
             final String remoteSha1 = fetchRemoteSha1IfConfigured();
             if (remoteSha1 != null && !remoteSha1.isBlank()) {
                 sha1 = remoteSha1;
+                resourcePackUrl = withCacheBuster(configuredPackUrl(), sha1);
             }
         }
 
@@ -240,6 +241,19 @@ final class SyncService {
         if (destination.equals(this.serverRoot) || destination.getParent() == null) {
             throw new IllegalStateException("Refusing to sync into unsafe destination: " + destination);
         }
+    }
+
+    @Nullable
+    private String withCacheBuster(@Nullable final String url, @Nullable final String sha1) {
+        if (url == null || url.isBlank()) {
+            return url;
+        }
+        if (sha1 == null || sha1.isBlank()) {
+            return url;
+        }
+
+        final String separator = url.contains("?") ? "&" : "?";
+        return url + separator + "v=" + sha1;
     }
 
     private void deleteRecursively(final Path path) throws IOException {

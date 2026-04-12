@@ -1,1 +1,1 @@
-give @s minecraft:trapped_chest[minecraft:item_model="sasquatch:cashe",minecraft:item_name='{"text":"Cashe","color":"red","italic":false}',minecraft:lore=['{"text":"Custom container item for 1.21.11+","color":"gray","italic":false}'],minecraft:custom_data={sasquatch:{cashe:1b}}]
+give @s minecraft:trapped_chest[minecraft:item_model="sasquatch:cashe",minecraft:item_name={text:"Cashe",color:"red",italic:false},minecraft:lore=[{text:"Custom container item for 1.21.11+",color:"gray",italic:false}],minecraft:custom_data={sasquatch:{cashe:1b}}]
