@@ -12,8 +12,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Stream;
 
 final class SelfUpdateService {
@@ -31,7 +33,7 @@ final class SelfUpdateService {
             throw new IllegalStateException("self-update.enabled is false.");
         }
 
-        final Path repoDirectory = resolveConfiguredPath("self-update.repository-directory");
+        final Path repoDirectory = resolveRepositoryDirectory("self-update.repository-directory");
         verifyGitRepository(repoDirectory);
 
         final String branch = config.getString("self-update.branch", "main");
@@ -67,12 +69,27 @@ final class SelfUpdateService {
         return new SelfUpdateReport(previousCommit, currentCommit, repositoryChanged, shouldBuild, builtJar, deployedJar, syncRan);
     }
 
+    String currentRepositoryCommit() {
+        try {
+            final Path repoDirectory = resolveRepositoryDirectory("self-update.repository-directory");
+            return runCommand(repoDirectory, List.of("git", "rev-parse", "HEAD"), "read current commit").trim();
+        } catch (MissingRepositoryException exception) {
+            return null;
+        } catch (IOException | InterruptedException exception) {
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            this.plugin.getLogger().warning("Failed to read current repository commit: " + exception.getMessage());
+            return null;
+        }
+    }
+
     private void verifyGitRepository(final Path repoDirectory) {
         if (!Files.isDirectory(repoDirectory)) {
-            throw new IllegalStateException("self-update.repository-directory does not exist: " + repoDirectory);
+            throw new MissingRepositoryException("self-update.repository-directory does not exist: " + repoDirectory);
         }
         if (!Files.exists(repoDirectory.resolve(".git"))) {
-            throw new IllegalStateException("self-update.repository-directory is not a git repository: " + repoDirectory);
+            throw new MissingRepositoryException("self-update.repository-directory is not a git repository: " + repoDirectory);
         }
     }
 
@@ -144,6 +161,73 @@ final class SelfUpdateService {
 
         // Match SyncService path handling for the repo checked out next to the server root.
         return this.serverRoot.resolveSibling(path).normalize();
+    }
+
+    private Path resolveRepositoryDirectory(final String pathKey) {
+        final String configured = this.plugin.getConfig().getString(pathKey);
+        if (configured == null || configured.isBlank()) {
+            throw new IllegalStateException("Missing config value: " + pathKey);
+        }
+
+        final Path configuredPath = Path.of(configured);
+        for (final Path candidate : repositoryCandidates(configuredPath)) {
+            if (isGitRepository(candidate)) {
+                return candidate;
+            }
+        }
+
+        throw new MissingRepositoryException("self-update.repository-directory does not exist: " + resolveConfiguredPath(pathKey));
+    }
+
+    private List<Path> repositoryCandidates(final Path configuredPath) {
+        final Set<Path> candidates = new LinkedHashSet<>();
+        if (configuredPath.isAbsolute()) {
+            candidates.add(configuredPath.normalize());
+            return new ArrayList<>(candidates);
+        }
+
+        final Path primary = this.serverRoot.resolve(configuredPath).normalize();
+        final Path sibling = this.serverRoot.resolveSibling(configuredPath).normalize();
+        final Path pluginsParent = this.plugin.getDataFolder().toPath().getParent();
+
+        candidates.add(primary);
+        candidates.add(sibling);
+        if (pluginsParent != null) {
+            candidates.add(pluginsParent.resolve(configuredPath).normalize());
+        }
+
+        final String directoryName = configuredPath.getFileName() != null ? configuredPath.getFileName().toString() : configuredPath.toString();
+        for (final Path base : List.copyOf(candidates)) {
+            final Path parent = base.getParent();
+            if (parent != null) {
+                final Path caseInsensitive = resolveCaseInsensitiveChild(parent, directoryName);
+                if (caseInsensitive != null) {
+                    candidates.add(caseInsensitive.normalize());
+                }
+            }
+        }
+
+        return new ArrayList<>(candidates);
+    }
+
+    private boolean isGitRepository(final Path path) {
+        return Files.isDirectory(path) && Files.exists(path.resolve(".git"));
+    }
+
+    private Path resolveCaseInsensitiveChild(final Path parent, final String expectedName) {
+        if (!Files.isDirectory(parent)) {
+            return null;
+        }
+
+        try (Stream<Path> stream = Files.list(parent)) {
+            return stream
+                .filter(Files::isDirectory)
+                .filter(path -> path.getFileName().toString().equalsIgnoreCase(expectedName))
+                .findFirst()
+                .orElse(null);
+        } catch (IOException exception) {
+            return null;
+        }
     }
 
     private List<String> splitCommand(final String commandLine) {

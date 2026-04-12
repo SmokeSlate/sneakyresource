@@ -3,7 +3,7 @@ run-minecraft-reload-after-sync: true
 
 resource-pack:
   enabled: true
-  source-directory: "sneakyresource/sasquatchresourcepack"
+  source-directory: "SneakySasquatch/sasquatchresourcepack"
   output-zip: "plugins/SneakyResource/generated/sasquatchresourcepack.zip"
   write-sha1-file: true
   sha1-output: "plugins/SneakyResource/generated/sasquatchresourcepack.zip.sha1"
@@ -17,13 +17,13 @@ resource-pack:
 
 datapack:
   enabled: true
-  source-directory: "sneakyresource/datapack"
+  source-directory: "SneakySasquatch/datapack"
   destination-directory: "world/datapacks/sneakyresource"
 
 self-update:
   enabled: true
   run-on-startup: true
-  repository-directory: "sneakyresource"
+  repository-directory: "SneakySasquatch"
   branch: "main"
   build-command: ""
   artifact-path: ""

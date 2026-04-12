@@ -32,8 +32,8 @@ paper-server/
 
 With that layout:
 
-- `sneakyresource/sasquatchresourcepack` is the resource pack source
-- `sneakyresource/datapack` is the datapack source
+- `SneakySasquatch/sasquatchresourcepack` is the resource pack source
+- `SneakySasquatch/datapack` is the datapack source
 - `world/datapacks/sneakyresource` is the live server datapack destination
 
 The plugin also falls back to the older sibling layout automatically:
@@ -79,7 +79,7 @@ For truly zero-config setup, upload the jar and restart the server. The only ext
 
 By default this uses:
 
-- `self-update.repository-directory: "sneakyresource"`
+- `self-update.repository-directory: "SneakySasquatch"`
 - `self-update.branch: "main"`
 - `gradlew.bat build` on Windows
 - `./gradlew build` on Linux/macOS

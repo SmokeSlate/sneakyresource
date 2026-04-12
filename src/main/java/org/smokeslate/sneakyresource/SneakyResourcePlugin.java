@@ -78,6 +78,12 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     }
 
     private void showStatus(final CommandSender sender) {
+        sender.sendMessage(Component.text("Plugin version: " + getPluginMeta().getVersion()));
+        final String currentCommit = this.selfUpdateService.currentRepositoryCommit();
+        if (currentCommit != null && !currentCommit.isBlank()) {
+            sender.sendMessage(Component.text("Repository commit: " + shortCommit(currentCommit)));
+        }
+
         if (this.lastReport == null) {
             sender.sendMessage(Component.text("No sync has run yet."));
         } else {
@@ -147,6 +153,19 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
                 getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(summary)));
             }
             scheduleRestartIfNeeded(sender, this.lastSelfUpdateReport);
+        } catch (MissingRepositoryException exception) {
+            final String message = "SneakyResource self-update skipped: " + exception.getMessage();
+            if (startup) {
+                getLogger().info(message);
+            } else {
+                getLogger().warning(message);
+            }
+            if (sender != null) {
+                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(message)));
+            }
+            if (startup && getConfig().getBoolean("sync-on-startup", true)) {
+                runStartupSync();
+            }
         } catch (Exception exception) {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -195,6 +214,10 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         }
 
         getServer().shutdown();
+    }
+
+    private String shortCommit(final String commit) {
+        return commit.length() <= 12 ? commit : commit.substring(0, 12);
     }
 
     boolean shouldSendResourcePack() {
