@@ -16,3 +16,14 @@ datapack:
   enabled: true
   source-directory: "sneakyresource/datapack"
   destination-directory: "world/datapacks/sneakyresource"
+
+self-update:
+  enabled: true
+  run-on-startup: false
+  repository-directory: "sneakyresource"
+  branch: "main"
+  build-command: ""
+  artifact-path: ""
+  build-when-unchanged: false
+  stage-jar-in-update-folder: true
+  sync-after-update: true

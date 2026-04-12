@@ -11,17 +11,32 @@ import java.util.Objects;
 
 public final class SneakyResourcePlugin extends JavaPlugin implements CommandExecutor {
     private SyncService syncService;
+    private SelfUpdateService selfUpdateService;
     private SyncReport lastReport;
+    private SelfUpdateReport lastSelfUpdateReport;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         this.syncService = new SyncService(this);
+        this.selfUpdateService = new SelfUpdateService(this);
         Objects.requireNonNull(getCommand("sneakyresource"), "sneakyresource command is missing from plugin.yml")
             .setExecutor(this);
         getServer().getPluginManager().registerEvents(new PlayerResourcePackListener(this), this);
 
-        if (getConfig().getBoolean("sync-on-startup", true)) {
+        if (getConfig().getBoolean("self-update.run-on-startup", false)) {
+            getServer().getScheduler().runTaskAsynchronously(this, () -> {
+                try {
+                    this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
+                    getLogger().info(this.lastSelfUpdateReport.summaryLine());
+                } catch (IOException | InterruptedException exception) {
+                    if (exception instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    getLogger().severe("Self-update failed: " + exception.getMessage());
+                }
+            });
+        } else if (getConfig().getBoolean("sync-on-startup", true)) {
             try {
                 this.lastReport = this.syncService.syncAll(true);
                 getLogger().info(this.lastReport.summaryLine());
@@ -38,8 +53,9 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         switch (subcommand) {
             case "sync" -> runSync(sender, true);
             case "reload" -> reloadPluginConfig(sender);
+            case "update" -> runSelfUpdate(sender);
             case "status" -> showStatus(sender);
-            default -> sender.sendMessage(Component.text("Usage: /sneakyresource <sync|reload|status>"));
+            default -> sender.sendMessage(Component.text("Usage: /sneakyresource <sync|reload|update|status>"));
         }
         return true;
     }
@@ -47,6 +63,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     private void reloadPluginConfig(final CommandSender sender) {
         reloadConfig();
         this.syncService = new SyncService(this);
+        this.selfUpdateService = new SelfUpdateService(this);
         sender.sendMessage(Component.text("SneakyResource config reloaded."));
     }
 
@@ -60,24 +77,54 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         }
     }
 
+    private void runSelfUpdate(final CommandSender sender) {
+        sender.sendMessage(Component.text("SneakyResource self-update started."));
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
+                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(this.lastSelfUpdateReport.summaryLine())));
+            } catch (IOException | InterruptedException exception) {
+                if (exception instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                final String message = "SneakyResource self-update failed: " + exception.getMessage();
+                getLogger().warning(message);
+                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(message)));
+            }
+        });
+    }
+
     private void showStatus(final CommandSender sender) {
         if (this.lastReport == null) {
             sender.sendMessage(Component.text("No sync has run yet."));
-            return;
+        } else {
+            sender.sendMessage(Component.text(this.lastReport.summaryLine()));
+            if (this.lastReport.resourcePackZip() != null) {
+                sender.sendMessage(Component.text("Pack zip: " + this.lastReport.resourcePackZip()));
+            }
+            if (this.lastReport.resourcePackSha1() != null) {
+                sender.sendMessage(Component.text("Pack sha1: " + this.lastReport.resourcePackSha1()));
+            }
+            if (this.lastReport.resourcePackUrl() != null) {
+                sender.sendMessage(Component.text("Pack url: " + this.lastReport.resourcePackUrl()));
+            }
+            if (this.lastReport.datapackDestination() != null) {
+                sender.sendMessage(Component.text("Datapack: " + this.lastReport.datapackDestination()));
+            }
         }
 
-        sender.sendMessage(Component.text(this.lastReport.summaryLine()));
-        if (this.lastReport.resourcePackZip() != null) {
-            sender.sendMessage(Component.text("Pack zip: " + this.lastReport.resourcePackZip()));
-        }
-        if (this.lastReport.resourcePackSha1() != null) {
-            sender.sendMessage(Component.text("Pack sha1: " + this.lastReport.resourcePackSha1()));
-        }
-        if (this.lastReport.resourcePackUrl() != null) {
-            sender.sendMessage(Component.text("Pack url: " + this.lastReport.resourcePackUrl()));
-        }
-        if (this.lastReport.datapackDestination() != null) {
-            sender.sendMessage(Component.text("Datapack: " + this.lastReport.datapackDestination()));
+        if (this.lastSelfUpdateReport == null) {
+            sender.sendMessage(Component.text("No self-update has run yet."));
+        } else {
+            sender.sendMessage(Component.text(this.lastSelfUpdateReport.summaryLine()));
+            sender.sendMessage(Component.text("Previous commit: " + this.lastSelfUpdateReport.previousCommit()));
+            sender.sendMessage(Component.text("Current commit: " + this.lastSelfUpdateReport.currentCommit()));
+            if (this.lastSelfUpdateReport.builtJar() != null) {
+                sender.sendMessage(Component.text("Built jar: " + this.lastSelfUpdateReport.builtJar()));
+            }
+            if (this.lastSelfUpdateReport.deployedJar() != null) {
+                sender.sendMessage(Component.text("Staged update jar: " + this.lastSelfUpdateReport.deployedJar()));
+            }
         }
     }
 
@@ -85,7 +132,15 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         return this.syncService;
     }
 
+    SelfUpdateService getSelfUpdateService() {
+        return this.selfUpdateService;
+    }
+
     SyncReport getLastReport() {
         return this.lastReport;
+    }
+
+    void setLastReport(final SyncReport lastReport) {
+        this.lastReport = lastReport;
     }
 }

@@ -14,6 +14,7 @@ The plugin reads the repo checkout directly from disk, then:
 
 - `/sneakyresource sync`
 - `/sneakyresource reload`
+- `/sneakyresource update`
 - `/sneakyresource status`
 
 ## Default layout
@@ -57,3 +58,24 @@ When that URL is configured, the plugin will:
 
 - send the pack to players on join via the Paper API
 - optionally mark the pack as required
+
+## Self Update
+
+`/sneakyresource update` will:
+
+- run `git pull --ff-only` in the configured repo
+- run the repo build
+- copy the built jar into Paper's `update/` folder for the next restart
+- optionally re-sync the resource pack and datapack from the updated checkout
+
+By default this uses:
+
+- `self-update.repository-directory: "sneakyresource"`
+- `self-update.branch: "main"`
+- `gradlew.bat build` on Windows
+- `./gradlew build` on Linux/macOS
+
+Paper recommends staging updated plugin jars in the configured update folder and applying them on restart:
+
+- [Updating | PaperMC Docs](https://docs.papermc.io/paper/updating/)
+- [bukkit.yml Reference | PaperMC Docs](https://docs.papermc.io/paper/reference/bukkit-configuration/)
