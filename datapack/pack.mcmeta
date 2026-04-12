@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "description": "Sasquatch Cashe datapack",
+    "min_format": [
+      94,
+      1
+    ],
+    "max_format": [
+      94,
+      1
+    ]
+  }
+}

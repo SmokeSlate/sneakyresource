@@ -1,0 +1,14 @@
+sync-on-startup: true
+run-minecraft-reload-after-sync: true
+
+resource-pack:
+  enabled: true
+  source-directory: "../sneakyresource/sasquatchresourcepack"
+  output-zip: "plugins/SneakyResource/generated/sasquatchresourcepack.zip"
+  write-sha1-file: true
+  sha1-output: "plugins/SneakyResource/generated/sasquatchresourcepack.zip.sha1"
+
+datapack:
+  enabled: true
+  source-directory: "../sneakyresource/datapack"
+  destination-directory: "world/datapacks/sneakyresource"

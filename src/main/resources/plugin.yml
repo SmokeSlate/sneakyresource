@@ -1,0 +1,15 @@
+name: SneakyResource
+main: org.smokeslate.sneakyresource.SneakyResourcePlugin
+version: ${version}
+api-version: '1.21.8'
+authors: [SmokeSlate]
+website: https://github.com/SmokeSlate/sneakyresource
+description: Syncs a resource pack zip and datapack folder into Paper server paths.
+permissions:
+  sneakyresource.sync:
+    default: op
+commands:
+  sneakyresource:
+    description: Sync the configured resource pack and datapack.
+    permission: sneakyresource.sync
+    usage: "/sneakyresource <sync|status>"

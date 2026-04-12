@@ -1,0 +1,26 @@
+{
+  "model": {
+    "type": "select",
+    "property": "custom_model_data",
+    "fallback": {
+      "type": "model",
+      "model": "item/cooked_porkchop"
+    },
+    "cases": [
+      {
+        "when": "sausage",
+        "model": {
+          "type": "model",
+          "model": "item/sausage"
+        }
+      },
+      {
+        "when": "grilled_sausage",
+        "model": {
+          "type": "model",
+          "model": "item/grilled_sausage"
+        }
+      }
+    ]
+  }
+}

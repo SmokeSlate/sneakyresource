@@ -1,0 +1,41 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "GTG",
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "T": {
+      "item": "minecraft:trapped_chest"
+    }
+  },
+  "result": {
+    "id": "minecraft:trapped_chest",
+    "count": 1,
+    "components": {
+      "minecraft:item_model": "sasquatch:cashe",
+      "minecraft:item_name": {
+        "text": "Cashe",
+        "color": "red",
+        "italic": false
+      },
+      "minecraft:lore": [
+        {
+          "text": "Custom container item for 1.21.11+",
+          "color": "gray",
+          "italic": false
+        }
+      ],
+      "minecraft:custom_data": {
+        "sasquatch": {
+          "cashe": 1
+        }
+      }
+    }
+  }
+}

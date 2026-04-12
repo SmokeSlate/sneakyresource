@@ -1,0 +1,19 @@
+{
+  "model": {
+    "type": "select",
+    "property": "custom_model_data",
+    "fallback": {
+      "type": "model",
+      "model": "item/carrot"
+    },
+    "cases": [
+      {
+        "when": "mustard",
+        "model": {
+          "type": "model",
+          "model": "item/mustard"
+        }
+      }
+    ]
+  }
+}

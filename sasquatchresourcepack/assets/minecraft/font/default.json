@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/coin.png",
+      "ascent": 11,
+      "height": 16,
+      "chars": [
+        "\u2600"
+      ]
+    }
+  ]
+}
