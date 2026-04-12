@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "minecraft:cobblestone"
+  },
+  "result": {
+    "id": "minecraft:flint",
+    "count": 1,
+    "components": {
+      "minecraft:item_model": "sasquatch:rock_small_1",
+      "minecraft:item_name": {
+        "text": "Small Rock 1",
+        "color": "gray",
+        "italic": false
+      },
+      "minecraft:lore": [
+        {
+          "text": "Decorative stone",
+          "color": "dark_gray",
+          "italic": false
+        }
+      ],
+      "minecraft:custom_data": {
+        "sasquatch": {
+          "rock_small_1": 1
+        }
+      }
+    }
+  }
+}
