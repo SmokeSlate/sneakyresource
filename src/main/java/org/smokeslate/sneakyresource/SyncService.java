@@ -7,6 +7,10 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +19,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Enumeration;
 import java.util.HexFormat;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -40,7 +47,11 @@ final class SyncService {
         Path datapackDestination = null;
 
         if (syncResourcePack) {
-            final Path resourcePackSource = resolveConfiguredPath("resource-pack.source-directory");
+            final Path resourcePackSource = resolveSourceDirectory(
+                "resource-pack.source-directory",
+                "bundled/resourcepack/",
+                "bundled/resourcepack"
+            );
             final Path zipOutput = resolveConfiguredPath("resource-pack.output-zip");
             verifyDirectory(resourcePackSource, "resource-pack.source-directory");
             ensureParentDirectory(zipOutput);
@@ -55,10 +66,18 @@ final class SyncService {
             }
 
             resourcePackUrl = configuredPackUrl();
+            final String remoteSha1 = fetchRemoteSha1IfConfigured();
+            if (remoteSha1 != null && !remoteSha1.isBlank()) {
+                sha1 = remoteSha1;
+            }
         }
 
         if (syncDatapack) {
-            final Path datapackSource = resolveConfiguredPath("datapack.source-directory");
+            final Path datapackSource = resolveSourceDirectory(
+                "datapack.source-directory",
+                "bundled/datapack/",
+                "bundled/datapack"
+            );
             datapackDestination = resolveConfiguredPath("datapack.destination-directory");
             verifyDirectory(datapackSource, "datapack.source-directory");
             mirrorDirectory(datapackSource, datapackDestination);
@@ -91,6 +110,18 @@ final class SyncService {
         return this.serverRoot.resolveSibling(path).normalize();
     }
 
+    private Path resolveSourceDirectory(final String pathKey, final String bundledRoot, final String extractedSubdirectory) throws IOException {
+        final String configured = this.plugin.getConfig().getString(pathKey, "").trim();
+        if (!configured.isBlank()) {
+            final Path configuredPath = resolveConfiguredPath(pathKey);
+            if (Files.isDirectory(configuredPath)) {
+                return configuredPath;
+            }
+        }
+
+        return extractBundledDirectory(bundledRoot, extractedSubdirectory);
+    }
+
     private void verifyDirectory(final Path path, final String label) {
         if (!Files.isDirectory(path)) {
             throw new IllegalStateException(label + " must point to an existing directory: " + path);
@@ -104,9 +135,60 @@ final class SyncService {
         }
     }
 
+    private Path extractBundledDirectory(final String bundledRoot, final String extractedSubdirectory) throws IOException {
+        final Path destination = this.plugin.getDataFolder().toPath().resolve(extractedSubdirectory).normalize();
+        deleteRecursively(destination);
+        Files.createDirectories(destination);
+
+        final Path codeSource;
+        try {
+            codeSource = Path.of(this.plugin.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+        } catch (Exception exception) {
+            throw new IOException("Unable to locate plugin jar for bundled asset extraction.", exception);
+        }
+
+        if (Files.isDirectory(codeSource)) {
+            final Path sourceDirectory = codeSource.resolve(bundledRoot).normalize();
+            if (!Files.isDirectory(sourceDirectory)) {
+                throw new IOException("Bundled source directory not found: " + sourceDirectory);
+            }
+            mirrorDirectory(sourceDirectory, destination);
+            return destination;
+        }
+
+        try (JarFile jarFile = new JarFile(codeSource.toFile())) {
+            final Enumeration<JarEntry> entries = jarFile.entries();
+            while (entries.hasMoreElements()) {
+                final JarEntry entry = entries.nextElement();
+                final String name = entry.getName();
+                if (!name.startsWith(bundledRoot) || entry.isDirectory()) {
+                    continue;
+                }
+
+                final String relative = name.substring(bundledRoot.length());
+                final Path output = destination.resolve(relative).normalize();
+                ensureParentDirectory(output);
+                try (InputStream input = jarFile.getInputStream(entry)) {
+                    Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+
+        return destination;
+    }
+
     @Nullable
     String configuredPackUrl() {
         final String configured = this.plugin.getConfig().getString("resource-pack.public-url");
+        if (configured == null || configured.isBlank()) {
+            return null;
+        }
+        return configured.trim();
+    }
+
+    @Nullable
+    String configuredPackSha1Url() {
+        final String configured = this.plugin.getConfig().getString("resource-pack.sha1-url");
         if (configured == null || configured.isBlank()) {
             return null;
         }
@@ -230,5 +312,34 @@ final class SyncService {
 
         final String name = relative.getFileName().toString();
         return name.equals(".DS_Store") || name.equals("Thumbs.db");
+    }
+
+    @Nullable
+    private String fetchRemoteSha1IfConfigured() {
+        final String sha1Url = configuredPackSha1Url();
+        if (sha1Url == null || sha1Url.isBlank()) {
+            return null;
+        }
+
+        try {
+            final HttpClient client = HttpClient.newHttpClient();
+            final HttpRequest request = HttpRequest.newBuilder(URI.create(sha1Url)).GET().build();
+            final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                this.plugin.getLogger().warning("Failed to fetch remote resource pack sha1: HTTP " + response.statusCode());
+                return null;
+            }
+
+            final String body = response.body().trim();
+            if (body.isBlank()) {
+                return null;
+            }
+
+            final int separator = body.indexOf(' ');
+            return separator >= 0 ? body.substring(0, separator).trim() : body;
+        } catch (Exception exception) {
+            this.plugin.getLogger().warning("Failed to fetch remote resource pack sha1: " + exception.getMessage());
+            return null;
+        }
     }
 }

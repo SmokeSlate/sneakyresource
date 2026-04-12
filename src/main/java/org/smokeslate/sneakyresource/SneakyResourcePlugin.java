@@ -4,9 +4,9 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public final class SneakyResourcePlugin extends JavaPlugin implements CommandExecutor {
@@ -20,8 +20,10 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         saveDefaultConfig();
         this.syncService = new SyncService(this);
         this.selfUpdateService = new SelfUpdateService(this);
-        Objects.requireNonNull(getCommand("sneakyresource"), "sneakyresource command is missing from plugin.yml")
-            .setExecutor(this);
+
+        final PluginCommand command = Objects.requireNonNull(getCommand("sneakyresource"), "sneakyresource command is missing from plugin.yml");
+        command.setExecutor(this);
+        command.setTabCompleter(new SneakyResourceTabCompleter());
         getServer().getPluginManager().registerEvents(new PlayerResourcePackListener(this), this);
 
         if (getConfig().getBoolean("self-update.run-on-startup", false)) {
@@ -29,7 +31,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
                 try {
                     this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
                     getLogger().info(this.lastSelfUpdateReport.summaryLine());
-                } catch (IOException | InterruptedException exception) {
+                } catch (Exception exception) {
                     if (exception instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                     }
@@ -40,10 +42,14 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
             try {
                 this.lastReport = this.syncService.syncAll(true);
                 getLogger().info(this.lastReport.summaryLine());
-            } catch (IOException exception) {
+            } catch (Exception exception) {
                 getLogger().severe("Initial sync failed: " + exception.getMessage());
             }
         }
+    }
+
+    @Override
+    public void onDisable() {
     }
 
     @Override
@@ -71,7 +77,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         try {
             this.lastReport = this.syncService.syncAll(allowReload);
             sender.sendMessage(Component.text(this.lastReport.summaryLine()));
-        } catch (IOException exception) {
+        } catch (Exception exception) {
             sender.sendMessage(Component.text("SneakyResource sync failed: " + exception.getMessage()));
             getLogger().warning("SneakyResource sync failed: " + exception.getMessage());
         }
@@ -83,7 +89,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
             try {
                 this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
                 getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(this.lastSelfUpdateReport.summaryLine())));
-            } catch (IOException | InterruptedException exception) {
+            } catch (Exception exception) {
                 if (exception instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }

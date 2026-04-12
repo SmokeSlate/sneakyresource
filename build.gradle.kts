@@ -32,4 +32,12 @@ tasks.processResources {
     filesMatching("plugin.yml") {
         expand(props)
     }
+    from("sasquatchresourcepack") {
+        into("bundled/resourcepack")
+        exclude("**/.DS_Store")
+    }
+    from("datapack") {
+        into("bundled/datapack")
+        exclude("**/.DS_Store")
+    }
 }

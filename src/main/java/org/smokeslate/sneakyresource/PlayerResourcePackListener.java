@@ -24,9 +24,7 @@ final class PlayerResourcePackListener implements Listener {
         }
 
         final SyncReport report = this.plugin.getLastReport();
-        final String url = report != null && report.resourcePackUrl() != null
-            ? report.resourcePackUrl()
-            : this.plugin.getSyncService().configuredPackUrl();
+        final String url = resolvePackUrl(event.getPlayer());
         final String sha1 = report != null ? report.resourcePackSha1() : null;
 
         if (url == null || url.isBlank() || sha1 == null || sha1.isBlank()) {
@@ -39,5 +37,20 @@ final class PlayerResourcePackListener implements Listener {
     private void sendPack(final Player player, final String url, final String sha1, final boolean required, @Nullable final String promptText) {
         final Component prompt = promptText == null ? null : Component.text(promptText);
         player.setResourcePack(url, sha1, required, prompt);
+    }
+
+    @Nullable
+    private String resolvePackUrl(final Player player) {
+        final SyncReport report = this.plugin.getLastReport();
+        if (report != null && report.resourcePackUrl() != null && !report.resourcePackUrl().isBlank()) {
+            return report.resourcePackUrl();
+        }
+
+        final String configured = this.plugin.getSyncService().configuredPackUrl();
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        return null;
     }
 }

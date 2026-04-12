@@ -10,6 +10,8 @@ The plugin reads the repo checkout directly from disk, then:
 - sends the resource pack to joining players through Paper
 - runs `minecraft:reload` after syncing
 
+If no external `sneakyresource/` checkout exists, the plugin falls back to the bundled pack and datapack that are shipped inside the jar.
+
 ## Commands
 
 - `/sneakyresource sync`
@@ -52,12 +54,19 @@ The plugin jar will be in `build/libs/`.
 
 ## Resource Pack Delivery
 
-Set `resource-pack.public-url` in `plugins/SneakyResource/config.yml` to the public download URL for the generated zip.
+By default the plugin uses GitHub-hosted URLs:
 
-When that URL is configured, the plugin will:
+- `https://smokeslate.github.io/sneakyresource/sasquatchresourcepack.zip`
+- `https://smokeslate.github.io/sneakyresource/sasquatchresourcepack.zip.sha1`
+
+If you prefer, you can still set your own `resource-pack.public-url` and `resource-pack.sha1-url` in `plugins/SneakyResource/config.yml`.
+
+When resource-pack delivery is configured, the plugin will:
 
 - send the pack to players on join via the Paper API
 - optionally mark the pack as required
+
+For truly zero-config setup, upload the jar and restart the server. The only external requirement is that the GitHub Pages URL for this repo is live.
 
 ## Self Update
 
