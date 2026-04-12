@@ -56,8 +56,8 @@ The plugin jar will be in `build/libs/`.
 
 By default the plugin uses GitHub-hosted URLs:
 
-- `http://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip`
-- `http://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip.sha1`
+- `https://raw.githubusercontent.com/SmokeSlate/sneakyresource/pack-dist/sasquatchresourcepack.zip`
+- `https://raw.githubusercontent.com/SmokeSlate/sneakyresource/pack-dist/sasquatchresourcepack.zip.sha1`
 
 If you prefer, you can still set your own `resource-pack.public-url` and `resource-pack.sha1-url` in `plugins/SneakyResource/config.yml`.
 
@@ -66,7 +66,7 @@ When resource-pack delivery is configured, the plugin will:
 - send the pack to players on join via the Paper API
 - optionally mark the pack as required
 
-For truly zero-config setup, upload the jar and restart the server. The only external requirement is that the GitHub Pages URL for this repo is live.
+For truly zero-config setup, upload the jar and restart the server. Pushes to `main` publish the generated pack files to the `pack-dist` branch, which keeps the default URLs on `raw.githubusercontent.com` and works with hosts such as MineKeep that whitelist GitHub domains for resource packs.
 
 ## Self Update
 

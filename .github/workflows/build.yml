@@ -55,6 +55,13 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+      - name: Publish resource pack branch
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: pack-dist
+          publish_dir: ./dist
 
   deploy-pages:
     if: github.ref == 'refs/heads/main'
