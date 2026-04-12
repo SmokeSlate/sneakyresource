@@ -16,41 +16,19 @@ final class PlayerResourcePackListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(final PlayerJoinEvent event) {
-        if (!this.plugin.getConfig().getBoolean("resource-pack.enabled", true)) {
-            return;
-        }
-        if (!this.plugin.getConfig().getBoolean("resource-pack.send-on-join", true)) {
+        if (!this.plugin.shouldSendResourcePack()) {
             return;
         }
 
-        final SyncReport report = this.plugin.getLastReport();
-        final String url = resolvePackUrl(event.getPlayer());
-        final String sha1 = report != null ? report.resourcePackSha1() : null;
-
-        if (url == null || url.isBlank() || sha1 == null || sha1.isBlank()) {
-            return;
-        }
-
-        sendPack(event.getPlayer(), url, sha1, this.plugin.getSyncService().isPackRequired(), this.plugin.getSyncService().configuredPackPrompt());
-    }
-
-    private void sendPack(final Player player, final String url, final String sha1, final boolean required, @Nullable final String promptText) {
-        final Component prompt = promptText == null ? null : Component.text(promptText);
-        player.setResourcePack(url, sha1, required, prompt);
-    }
-
-    @Nullable
-    private String resolvePackUrl(final Player player) {
-        final SyncReport report = this.plugin.getLastReport();
-        if (report != null && report.resourcePackUrl() != null && !report.resourcePackUrl().isBlank()) {
-            return report.resourcePackUrl();
-        }
-
-        final String configured = this.plugin.getSyncService().configuredPackUrl();
-        if (configured != null && !configured.isBlank()) {
-            return configured;
-        }
-
-        return null;
+        final long delayTicks = Math.max(0L, this.plugin.getConfig().getLong("resource-pack.send-delay-ticks", 40L));
+        this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+            final boolean sent = this.plugin.sendResourcePackTo(event.getPlayer());
+            if (!sent) {
+                final long retryTicks = Math.max(0L, this.plugin.getConfig().getLong("resource-pack.retry-if-pending-ticks", 100L));
+                if (retryTicks > 0L) {
+                    this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> this.plugin.sendResourcePackTo(event.getPlayer()), retryTicks);
+                }
+            }
+        }, delayTicks);
     }
 }

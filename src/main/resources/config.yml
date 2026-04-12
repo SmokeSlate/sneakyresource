@@ -7,11 +7,13 @@ resource-pack:
   output-zip: "plugins/SneakyResource/generated/sasquatchresourcepack.zip"
   write-sha1-file: true
   sha1-output: "plugins/SneakyResource/generated/sasquatchresourcepack.zip.sha1"
-  public-url: "http://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip"
-  sha1-url: "http://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip.sha1"
+  public-url: "https://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip"
+  sha1-url: "https://github.sm0ke.org/sneakyresource/sasquatchresourcepack.zip.sha1"
   required: false
   prompt: "This server uses the SneakyResource pack."
   send-on-join: true
+  send-delay-ticks: 40
+  retry-if-pending-ticks: 100
 
 datapack:
   enabled: true
@@ -20,7 +22,7 @@ datapack:
 
 self-update:
   enabled: true
-  run-on-startup: false
+  run-on-startup: true
   repository-directory: "sneakyresource"
   branch: "main"
   build-command: ""
@@ -28,3 +30,7 @@ self-update:
   build-when-unchanged: false
   stage-jar-in-update-folder: true
   sync-after-update: true
+  sync-when-unchanged: true
+  restart-after-update: true
+  restart-command: ""
+  restart-delay-seconds: 5

@@ -6,6 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -18,6 +19,8 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         this.syncService = new SyncService(this);
         this.selfUpdateService = new SelfUpdateService(this);
 
@@ -27,24 +30,9 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         getServer().getPluginManager().registerEvents(new PlayerResourcePackListener(this), this);
 
         if (getConfig().getBoolean("self-update.run-on-startup", false)) {
-            getServer().getScheduler().runTaskAsynchronously(this, () -> {
-                try {
-                    this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
-                    getLogger().info(this.lastSelfUpdateReport.summaryLine());
-                } catch (Exception exception) {
-                    if (exception instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                    }
-                    getLogger().severe("Self-update failed: " + exception.getMessage());
-                }
-            });
+            getServer().getScheduler().runTaskAsynchronously(this, () -> runSelfUpdateTask(null, true));
         } else if (getConfig().getBoolean("sync-on-startup", true)) {
-            try {
-                this.lastReport = this.syncService.syncAll(true);
-                getLogger().info(this.lastReport.summaryLine());
-            } catch (Exception exception) {
-                getLogger().severe("Initial sync failed: " + exception.getMessage());
-            }
+            runStartupSync();
         }
     }
 
@@ -76,6 +64,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     private void runSync(final CommandSender sender, final boolean allowReload) {
         try {
             this.lastReport = this.syncService.syncAll(allowReload);
+            sendResourcePackToOnlinePlayers();
             sender.sendMessage(Component.text(this.lastReport.summaryLine()));
         } catch (Exception exception) {
             sender.sendMessage(Component.text("SneakyResource sync failed: " + exception.getMessage()));
@@ -85,19 +74,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
 
     private void runSelfUpdate(final CommandSender sender) {
         sender.sendMessage(Component.text("SneakyResource self-update started."));
-        getServer().getScheduler().runTaskAsynchronously(this, () -> {
-            try {
-                this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
-                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(this.lastSelfUpdateReport.summaryLine())));
-            } catch (Exception exception) {
-                if (exception instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                final String message = "SneakyResource self-update failed: " + exception.getMessage();
-                getLogger().warning(message);
-                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(message)));
-            }
-        });
+        getServer().getScheduler().runTaskAsynchronously(this, () -> runSelfUpdateTask(sender, false));
     }
 
     private void showStatus(final CommandSender sender) {
@@ -148,5 +125,120 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
 
     void setLastReport(final SyncReport lastReport) {
         this.lastReport = lastReport;
+    }
+
+    private void runStartupSync() {
+        try {
+            this.lastReport = this.syncService.syncAll(true);
+            sendResourcePackToOnlinePlayers();
+            getLogger().info(this.lastReport.summaryLine());
+        } catch (Exception exception) {
+            getLogger().severe("Initial sync failed: " + exception.getMessage());
+        }
+    }
+
+    private void runSelfUpdateTask(@Nullable final CommandSender sender, final boolean startup) {
+        try {
+            this.lastSelfUpdateReport = this.selfUpdateService.updateFromRepository();
+            final String summary = this.lastSelfUpdateReport.summaryLine();
+            getLogger().info(summary);
+            sendResourcePackToOnlinePlayers();
+            if (sender != null) {
+                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(summary)));
+            }
+            scheduleRestartIfNeeded(sender, this.lastSelfUpdateReport);
+        } catch (Exception exception) {
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            final String message = "SneakyResource self-update failed: " + exception.getMessage();
+            getLogger().severe(message);
+            if (sender != null) {
+                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(message)));
+            }
+            if (startup && getConfig().getBoolean("sync-on-startup", true)) {
+                getLogger().warning("Falling back to startup sync after self-update failure.");
+                runStartupSync();
+            }
+        }
+    }
+
+    private void scheduleRestartIfNeeded(@Nullable final CommandSender sender, final SelfUpdateReport report) {
+        if (!report.repositoryChanged() || report.deployedJar() == null) {
+            return;
+        }
+        if (!getConfig().getBoolean("self-update.restart-after-update", true)) {
+            return;
+        }
+
+        final int delaySeconds = Math.max(0, getConfig().getInt("self-update.restart-delay-seconds", 5));
+        final String message = delaySeconds > 0
+            ? "SneakyResource scheduled a restart in " + delaySeconds + " seconds to apply the updated plugin."
+            : "SneakyResource is restarting the server now to apply the updated plugin.";
+
+        getLogger().info(message);
+        if (sender != null) {
+            getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(message)));
+        }
+
+        getServer().getScheduler().runTaskLater(this, this::restartServer, delaySeconds * 20L);
+    }
+
+    private void restartServer() {
+        final String configuredCommand = getConfig().getString("self-update.restart-command", "").trim();
+        if (!configuredCommand.isBlank()) {
+            final boolean handled = getServer().dispatchCommand(getServer().getConsoleSender(), configuredCommand);
+            if (handled) {
+                return;
+            }
+            getLogger().warning("Configured restart command did not execute successfully, shutting down instead: " + configuredCommand);
+        }
+
+        getServer().shutdown();
+    }
+
+    boolean shouldSendResourcePack() {
+        return getConfig().getBoolean("resource-pack.enabled", true)
+            && getConfig().getBoolean("resource-pack.send-on-join", true);
+    }
+
+    boolean sendResourcePackTo(final org.bukkit.entity.Player player) {
+        if (player == null || !player.isOnline() || !shouldSendResourcePack()) {
+            return false;
+        }
+
+        final SyncReport report = this.lastReport;
+        final String url = resolvePackUrl(report);
+        final String sha1 = report != null ? report.resourcePackSha1() : null;
+
+        if (url == null || url.isBlank() || sha1 == null || sha1.isBlank()) {
+            return false;
+        }
+
+        final String promptText = this.syncService.configuredPackPrompt();
+        final Component prompt = promptText == null ? null : Component.text(promptText);
+        player.setResourcePack(url, sha1, this.syncService.isPackRequired(), prompt);
+        return true;
+    }
+
+    private void sendResourcePackToOnlinePlayers() {
+        if (!shouldSendResourcePack()) {
+            return;
+        }
+        getServer().getScheduler().runTask(this, () -> getServer().getOnlinePlayers().forEach(this::sendResourcePackTo));
+    }
+
+    @Nullable
+    private String resolvePackUrl(@Nullable final SyncReport report) {
+        if (report != null && report.resourcePackUrl() != null && !report.resourcePackUrl().isBlank()) {
+            return report.resourcePackUrl();
+        }
+
+        final String configured = this.syncService.configuredPackUrl();
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        return null;
     }
 }

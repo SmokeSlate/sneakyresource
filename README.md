@@ -83,8 +83,13 @@ By default this uses:
 - `self-update.branch: "main"`
 - `gradlew.bat build` on Windows
 - `./gradlew build` on Linux/macOS
+- `self-update.run-on-startup: true`
+- `self-update.sync-when-unchanged: true`
+- `self-update.restart-after-update: true`
 
 Paper recommends staging updated plugin jars in the configured update folder and applying them on restart:
 
 - [Updating | PaperMC Docs](https://docs.papermc.io/paper/updating/)
 - [bukkit.yml Reference | PaperMC Docs](https://docs.papermc.io/paper/reference/bukkit-configuration/)
+
+If your host does not automatically restart the server after shutdown, set `self-update.restart-command` to the console command your panel expects and SneakyResource will run that instead.

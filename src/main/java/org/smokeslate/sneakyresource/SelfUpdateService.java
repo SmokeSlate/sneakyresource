@@ -42,6 +42,8 @@ final class SelfUpdateService {
 
         final boolean buildWhenUnchanged = config.getBoolean("self-update.build-when-unchanged", false);
         final boolean shouldBuild = repositoryChanged || buildWhenUnchanged;
+        final boolean syncAfterUpdate = config.getBoolean("self-update.sync-after-update", true);
+        final boolean syncWhenUnchanged = config.getBoolean("self-update.sync-when-unchanged", true);
 
         Path builtJar = null;
         Path deployedJar = null;
@@ -55,10 +57,11 @@ final class SelfUpdateService {
                 deployedJar = deployToUpdateFolder(builtJar);
             }
 
-            if (config.getBoolean("self-update.sync-after-update", true)) {
-                this.plugin.setLastReport(this.plugin.getSyncService().syncAll(true));
-                syncRan = true;
-            }
+        }
+
+        if (syncAfterUpdate && (shouldBuild || syncWhenUnchanged)) {
+            this.plugin.setLastReport(this.plugin.getSyncService().syncAll(true));
+            syncRan = true;
         }
 
         return new SelfUpdateReport(previousCommit, currentCommit, repositoryChanged, shouldBuild, builtJar, deployedJar, syncRan);
@@ -130,7 +133,17 @@ final class SelfUpdateService {
         }
 
         final Path path = Path.of(configured);
-        return path.isAbsolute() ? path.normalize() : this.serverRoot.resolve(path).normalize();
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+
+        final Path resolved = this.serverRoot.resolve(path).normalize();
+        if (Files.exists(resolved) || !configured.startsWith("sneakyresource/")) {
+            return resolved;
+        }
+
+        // Match SyncService path handling for the repo checked out next to the server root.
+        return this.serverRoot.resolveSibling(path).normalize();
     }
 
     private List<String> splitCommand(final String commandLine) {
