@@ -1,0 +1,14 @@
+{
+  "block.minecraft.dead_tube_coral_fan": "Rock (Style 1)",
+  "item.minecraft.dead_tube_coral_fan": "Rock (Style 1)",
+
+  "block.minecraft.dead_brain_coral_fan": "Rock (Style 2)",
+  "item.minecraft.dead_brain_coral_fan": "Rock (Style 2)",
+
+  "block.minecraft.cobweb": "Bush",
+  "item.minecraft.cobweb": "Bush",
+
+  "item.minecraft.dead_bubble_coral_fan": "Chair",
+  "block.minecraft.dead_bubble_coral_fan": "Chair",
+  "block.minecraft.dead_bubble_coral_wall_fan": "Chair"
+}
