@@ -180,6 +180,11 @@ final class SyncService {
 
     @Nullable
     String configuredPackUrl() {
+        final String selfHosted = configuredSelfHostedPackUrl();
+        if (selfHosted != null && !selfHosted.isBlank()) {
+            return selfHosted;
+        }
+
         final String configured = this.plugin.getConfig().getString("resource-pack.public-url");
         if (configured == null || configured.isBlank()) {
             return null;
@@ -189,6 +194,11 @@ final class SyncService {
 
     @Nullable
     String configuredPackSha1Url() {
+        final String selfHosted = configuredSelfHostedPackSha1Url();
+        if (selfHosted != null && !selfHosted.isBlank()) {
+            return selfHosted;
+        }
+
         final String configured = this.plugin.getConfig().getString("resource-pack.sha1-url");
         if (configured == null || configured.isBlank()) {
             return null;
@@ -200,6 +210,10 @@ final class SyncService {
         return this.plugin.getConfig().getBoolean("resource-pack.required", false);
     }
 
+    boolean isSelfHostedPackEnabled() {
+        return this.plugin.getConfig().getBoolean("resource-pack.self-hosted.enabled", true);
+    }
+
     @Nullable
     String configuredPackPrompt() {
         final String configured = this.plugin.getConfig().getString("resource-pack.prompt");
@@ -207,6 +221,57 @@ final class SyncService {
             return null;
         }
         return configured;
+    }
+
+    @Nullable
+    private String configuredSelfHostedPackUrl() {
+        return configuredSelfHostedUrl("resource-pack.self-hosted.zip-path");
+    }
+
+    @Nullable
+    private String configuredSelfHostedPackSha1Url() {
+        return configuredSelfHostedUrl("resource-pack.self-hosted.sha1-path");
+    }
+
+    @Nullable
+    private String configuredSelfHostedUrl(final String pathKey) {
+        if (!isSelfHostedPackEnabled()) {
+            return null;
+        }
+
+        final String publicBaseUrl = this.plugin.getConfig().getString("resource-pack.self-hosted.public-base-url", "").trim();
+        final String configuredPath = this.plugin.getConfig().getString(pathKey, "").trim();
+        final String normalizedPath = configuredPath.startsWith("/") ? configuredPath : "/" + configuredPath;
+        if (!publicBaseUrl.isBlank()) {
+            return joinUrl(publicBaseUrl, normalizedPath);
+        }
+
+        final String hostname = this.plugin.getConfig().getString("resource-pack.self-hosted.hostname", "").trim();
+        if (hostname.isBlank()) {
+            return null;
+        }
+
+        final String scheme = this.plugin.getConfig().getString("resource-pack.self-hosted.scheme", "http").trim();
+        final int port = this.plugin.getConfig().getInt(
+            "resource-pack.self-hosted.public-port",
+            this.plugin.getConfig().getInt("resource-pack.self-hosted.port", 2053)
+        );
+        final String defaultPortlessUrl = scheme + "://" + hostname;
+        return joinUrl(defaultPortlessUrl + portSegment(scheme, port), normalizedPath);
+    }
+
+    private String joinUrl(final String baseUrl, final String normalizedPath) {
+        return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) + normalizedPath : baseUrl + normalizedPath;
+    }
+
+    private String portSegment(final String scheme, final int port) {
+        if (port <= 0) {
+            return "";
+        }
+        if (("http".equalsIgnoreCase(scheme) && port == 80) || ("https".equalsIgnoreCase(scheme) && port == 443)) {
+            return "";
+        }
+        return ":" + port;
     }
 
     private void mirrorDirectory(final Path source, final Path destination) throws IOException {
@@ -330,6 +395,10 @@ final class SyncService {
 
     @Nullable
     private String fetchRemoteSha1IfConfigured() {
+        if (isSelfHostedPackEnabled()) {
+            return null;
+        }
+
         final String sha1Url = configuredPackSha1Url();
         if (sha1Url == null || sha1Url.isBlank()) {
             return null;

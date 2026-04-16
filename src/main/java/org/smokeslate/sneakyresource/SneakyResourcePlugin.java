@@ -5,14 +5,18 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public final class SneakyResourcePlugin extends JavaPlugin implements CommandExecutor {
     private SyncService syncService;
     private SelfUpdateService selfUpdateService;
+    private ResourcePackHttpServer resourcePackHttpServer;
+    private CustomBlockService customBlockService;
     private SyncReport lastReport;
     private SelfUpdateReport lastSelfUpdateReport;
 
@@ -23,11 +27,21 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         saveConfig();
         this.syncService = new SyncService(this);
         this.selfUpdateService = new SelfUpdateService(this);
+        this.resourcePackHttpServer = new ResourcePackHttpServer(this);
+        this.customBlockService = createCustomBlockService();
+
+        try {
+            this.resourcePackHttpServer.start();
+        } catch (IOException exception) {
+            getLogger().severe("Failed to start self-hosted resource pack server: " + exception.getMessage());
+        }
 
         final PluginCommand command = Objects.requireNonNull(getCommand("sneakyresource"), "sneakyresource command is missing from plugin.yml");
         command.setExecutor(this);
         command.setTabCompleter(new SneakyResourceTabCompleter());
         getServer().getPluginManager().registerEvents(new PlayerResourcePackListener(this), this);
+        getServer().getPluginManager().registerEvents(this.customBlockService, this);
+        this.customBlockService.load();
 
         if (getConfig().getBoolean("self-update.run-on-startup", false)) {
             getServer().getScheduler().runTaskAsynchronously(this, () -> runSelfUpdateTask(null, true));
@@ -38,6 +52,12 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
 
     @Override
     public void onDisable() {
+        if (this.customBlockService != null) {
+            this.customBlockService.save();
+        }
+        if (this.resourcePackHttpServer != null) {
+            this.resourcePackHttpServer.stop();
+        }
     }
 
     @Override
@@ -58,6 +78,22 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         reloadConfig();
         this.syncService = new SyncService(this);
         this.selfUpdateService = new SelfUpdateService(this);
+        if (this.resourcePackHttpServer != null) {
+            this.resourcePackHttpServer.stop();
+        }
+        this.resourcePackHttpServer = new ResourcePackHttpServer(this);
+        try {
+            this.resourcePackHttpServer.start();
+        } catch (IOException exception) {
+            getLogger().warning("Failed to restart self-hosted resource pack server: " + exception.getMessage());
+        }
+        if (this.customBlockService != null) {
+            this.customBlockService.save();
+            HandlerList.unregisterAll(this.customBlockService);
+        }
+        this.customBlockService = createCustomBlockService();
+        getServer().getPluginManager().registerEvents(this.customBlockService, this);
+        this.customBlockService.load();
         sender.sendMessage(Component.text("SneakyResource config reloaded."));
     }
 
@@ -79,9 +115,9 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
 
     private void showStatus(final CommandSender sender) {
         sender.sendMessage(Component.text("Plugin version: " + getPluginMeta().getVersion()));
-        final String currentCommit = this.selfUpdateService.currentRepositoryCommit();
+        final String currentCommit = this.selfUpdateService.currentBuildCommit();
         if (currentCommit != null && !currentCommit.isBlank()) {
-            sender.sendMessage(Component.text("Repository commit: " + shortCommit(currentCommit)));
+            sender.sendMessage(Component.text("Build commit: " + shortCommit(currentCommit)));
         }
 
         if (this.lastReport == null) {
@@ -102,14 +138,16 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
             }
         }
 
+        sender.sendMessage(Component.text("Custom block integration: " + this.customBlockService.integrationName()));
+
         if (this.lastSelfUpdateReport == null) {
             sender.sendMessage(Component.text("No self-update has run yet."));
         } else {
             sender.sendMessage(Component.text(this.lastSelfUpdateReport.summaryLine()));
             sender.sendMessage(Component.text("Previous commit: " + this.lastSelfUpdateReport.previousCommit()));
             sender.sendMessage(Component.text("Current commit: " + this.lastSelfUpdateReport.currentCommit()));
-            if (this.lastSelfUpdateReport.builtJar() != null) {
-                sender.sendMessage(Component.text("Built jar: " + this.lastSelfUpdateReport.builtJar()));
+            if (this.lastSelfUpdateReport.downloadedJar() != null) {
+                sender.sendMessage(Component.text("Downloaded jar: " + this.lastSelfUpdateReport.downloadedJar()));
             }
             if (this.lastSelfUpdateReport.deployedJar() != null) {
                 sender.sendMessage(Component.text("Staged update jar: " + this.lastSelfUpdateReport.deployedJar()));
@@ -153,19 +191,6 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
                 getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(summary)));
             }
             scheduleRestartIfNeeded(sender, this.lastSelfUpdateReport);
-        } catch (MissingRepositoryException exception) {
-            final String message = "SneakyResource self-update skipped: " + exception.getMessage();
-            if (startup) {
-                getLogger().info(message);
-            } else {
-                getLogger().warning(message);
-            }
-            if (sender != null) {
-                getServer().getScheduler().runTask(this, () -> sender.sendMessage(Component.text(message)));
-            }
-            if (startup && getConfig().getBoolean("sync-on-startup", true)) {
-                runStartupSync();
-            }
         } catch (Exception exception) {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -183,7 +208,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     }
 
     private void scheduleRestartIfNeeded(@Nullable final CommandSender sender, final SelfUpdateReport report) {
-        if (!report.repositoryChanged() || report.deployedJar() == null) {
+        if (!report.updateAvailable() || report.deployedJar() == null) {
             return;
         }
         if (!getConfig().getBoolean("self-update.restart-after-update", true)) {
@@ -263,5 +288,9 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         }
 
         return null;
+    }
+
+    private CustomBlockService createCustomBlockService() {
+        return new ReservedStateCustomBlockService(this);
     }
 }

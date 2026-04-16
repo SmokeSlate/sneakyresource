@@ -7,7 +7,7 @@ The plugin reads the repo checkout directly from disk, then:
 - zips `sasquatchresourcepack/` into a server-ready pack zip
 - writes a SHA-1 file for that zip
 - mirrors `datapack/` into your Paper world datapacks folder
-- sends the resource pack to joining players through Paper
+- places custom `Cashe` and rock blocks by reserving specific vanilla block states
 - runs `minecraft:reload` after syncing
 
 If no external `sneakyresource/` checkout exists, the plugin falls back to the bundled pack and datapack that are shipped inside the jar.
@@ -54,35 +54,45 @@ The plugin jar will be in `build/libs/`.
 
 ## Resource Pack Delivery
 
-By default the plugin uses GitHub-hosted URLs:
+By default the plugin self-hosts the generated pack from its embedded HTTP server:
 
-- `https://raw.githubusercontent.com/SmokeSlate/sneakyresource/pack-dist/sasquatchresourcepack.zip`
-- `https://raw.githubusercontent.com/SmokeSlate/sneakyresource/pack-dist/sasquatchresourcepack.zip.sha1`
+- `resource-pack.self-hosted.enabled: true`
+- `resource-pack.self-hosted.public-base-url: "http://sneakysasquatch.minekeep.dev:2053"`
 
-If you prefer, you can still set your own `resource-pack.public-url` and `resource-pack.sha1-url` in `plugins/SneakyResource/config.yml`.
+If you terminate TLS in a reverse proxy, set `resource-pack.self-hosted.public-base-url` to the external `https://...` URL and leave the embedded server on its internal bind port. The embedded server itself only speaks HTTP.
 
-When resource-pack delivery is configured, the plugin will:
+If you prefer, you can still disable `resource-pack.self-hosted.enabled` and set your own `resource-pack.public-url` and `resource-pack.sha1-url` in `plugins/SneakyResource/config.yml`.
+
+When built-in resource-pack delivery is configured, the plugin will:
 
 - send the pack to players on join via the Paper API
 - optionally mark the pack as required
 
-For truly zero-config setup, upload the jar and restart the server. Pushes to `main` publish the generated pack files to the `pack-dist` branch, which keeps the default URLs on `raw.githubusercontent.com` and works with hosts such as MineKeep that whitelist GitHub domains for resource packs.
+For fully local hosting, upload the jar and restart the server. The plugin will generate the zip and sha1 locally, then serve both from the embedded HTTP server. Pushes to `main` still publish `pack-dist`, which remains available as a fallback external host.
+
+## Custom Blocks
+
+Custom placed `Cashe` and rocks use reserved vanilla block states rendered by the bundled resource pack:
+
+- `Cashe` uses a reserved `jigsaw` orientation
+- rocks use reserved `pink_petals` states
+
+This build targets Paper `1.21.11`.
 
 ## Self Update
 
 `/sneakyresource update` will:
 
-- run `git pull --ff-only` in the configured repo
-- run the repo build
-- copy the built jar into Paper's `update/` folder for the next restart
-- optionally re-sync the resource pack and datapack from the updated checkout
+- download the latest built plugin jar published by GitHub Actions
+- verify it against the published SHA-1
+- copy that jar into Paper's `update/` folder for the next restart
+- optionally re-sync the resource pack and datapack after the update check
 
 By default this uses:
 
-- `self-update.repository-directory: "SneakySasquatch"`
-- `self-update.branch: "main"`
-- `gradlew.bat build` on Windows
-- `./gradlew build` on Linux/macOS
+- `self-update.jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar"`
+- `self-update.jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar.sha1"`
+- `self-update.build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/build-info.properties"`
 - `self-update.run-on-startup: true`
 - `self-update.sync-when-unchanged: true`
 - `self-update.restart-after-update: true`

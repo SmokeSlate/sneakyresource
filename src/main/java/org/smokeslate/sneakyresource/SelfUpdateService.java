@@ -2,29 +2,29 @@ package org.smokeslate.sneakyresource;
 
 import org.bukkit.Server;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Stream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Properties;
 
 final class SelfUpdateService {
     private final SneakyResourcePlugin plugin;
-    private final Path serverRoot;
+    private final HttpClient httpClient;
 
     SelfUpdateService(final SneakyResourcePlugin plugin) {
         this.plugin = plugin;
-        this.serverRoot = Path.of("").toAbsolutePath().normalize();
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     SelfUpdateReport updateFromRepository() throws IOException, InterruptedException {
@@ -33,263 +33,200 @@ final class SelfUpdateService {
             throw new IllegalStateException("self-update.enabled is false.");
         }
 
-        final Path repoDirectory = resolveRepositoryDirectory("self-update.repository-directory");
-        verifyGitRepository(repoDirectory);
+        final BuildInfo localBuild = readBundledBuildInfo();
+        final BuildInfo remoteBuild = fetchRemoteBuildInfo();
+        final String previousCommit = localBuild.commit();
+        final String currentCommit = remoteBuild.commit();
 
-        final String branch = config.getString("self-update.branch", "main");
-        final String previousCommit = runCommand(repoDirectory, List.of("git", "rev-parse", "HEAD"), "read current commit").trim();
-        runCommand(repoDirectory, List.of("git", "pull", "--ff-only", "origin", branch), "pull latest commits");
-        final String currentCommit = runCommand(repoDirectory, List.of("git", "rev-parse", "HEAD"), "read updated commit").trim();
-        final boolean repositoryChanged = !previousCommit.equals(currentCommit);
-
-        final boolean buildWhenUnchanged = config.getBoolean("self-update.build-when-unchanged", false);
-        final boolean shouldBuild = repositoryChanged || buildWhenUnchanged;
+        final String jarUrl = requiredUrl("self-update.jar-url");
+        final String remoteSha1 = fetchRemoteSha1(requiredUrl("self-update.jar-sha1-url"));
+        final String localSha1 = currentPluginJarSha1();
+        final boolean updateAvailable = isUpdateAvailable(localBuild, remoteBuild, localSha1, remoteSha1);
         final boolean syncAfterUpdate = config.getBoolean("self-update.sync-after-update", true);
         final boolean syncWhenUnchanged = config.getBoolean("self-update.sync-when-unchanged", true);
 
-        Path builtJar = null;
+        Path downloadedJar = null;
         Path deployedJar = null;
         boolean syncRan = false;
 
-        if (shouldBuild) {
-            runBuild(repoDirectory);
-            builtJar = locateBuiltJar(repoDirectory);
-
+        if (updateAvailable) {
+            downloadedJar = downloadJar(jarUrl, remoteSha1);
             if (config.getBoolean("self-update.stage-jar-in-update-folder", true)) {
-                deployedJar = deployToUpdateFolder(builtJar);
+                deployedJar = deployToUpdateFolder(downloadedJar);
+            } else {
+                deployedJar = replaceCurrentPluginJar(downloadedJar);
             }
-
         }
 
-        if (syncAfterUpdate && (shouldBuild || syncWhenUnchanged)) {
+        if (syncAfterUpdate && (updateAvailable || syncWhenUnchanged)) {
             this.plugin.setLastReport(this.plugin.getSyncService().syncAll(true));
             syncRan = true;
         }
 
-        return new SelfUpdateReport(previousCommit, currentCommit, repositoryChanged, shouldBuild, builtJar, deployedJar, syncRan);
+        return new SelfUpdateReport(previousCommit, currentCommit, updateAvailable, downloadedJar, deployedJar, syncRan);
     }
 
-    String currentRepositoryCommit() {
-        try {
-            final Path repoDirectory = resolveRepositoryDirectory("self-update.repository-directory");
-            return runCommand(repoDirectory, List.of("git", "rev-parse", "HEAD"), "read current commit").trim();
-        } catch (MissingRepositoryException exception) {
-            return null;
-        } catch (IOException | InterruptedException exception) {
-            if (exception instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
+    @Nullable
+    String currentBuildCommit() {
+        return readBundledBuildInfo().commit();
+    }
+
+    private BuildInfo readBundledBuildInfo() {
+        try (InputStream input = this.plugin.getResource("build-info.properties")) {
+            if (input == null) {
+                return BuildInfo.unknown();
             }
-            this.plugin.getLogger().warning("Failed to read current repository commit: " + exception.getMessage());
-            return null;
+            final Properties properties = new Properties();
+            properties.load(input);
+            return BuildInfo.from(properties);
+        } catch (IOException exception) {
+            this.plugin.getLogger().warning("Failed to read bundled build info: " + exception.getMessage());
+            return BuildInfo.unknown();
         }
     }
 
-    private void verifyGitRepository(final Path repoDirectory) {
-        if (!Files.isDirectory(repoDirectory)) {
-            throw new MissingRepositoryException("self-update.repository-directory does not exist: " + repoDirectory);
-        }
-        if (!Files.exists(repoDirectory.resolve(".git"))) {
-            throw new MissingRepositoryException("self-update.repository-directory is not a git repository: " + repoDirectory);
-        }
-    }
-
-    private void runBuild(final Path repoDirectory) throws IOException, InterruptedException {
-        final String configured = this.plugin.getConfig().getString("self-update.build-command", "").trim();
-        final List<String> command;
-
-        if (!configured.isBlank()) {
-            command = splitCommand(configured);
-        } else if (isWindows()) {
-            command = List.of("gradlew.bat", "build");
-        } else {
-            command = List.of("./gradlew", "build");
+    private BuildInfo fetchRemoteBuildInfo() throws IOException, InterruptedException {
+        final String buildInfoUrl = requiredUrl("self-update.build-info-url");
+        final HttpRequest request = HttpRequest.newBuilder(URI.create(buildInfoUrl)).GET().build();
+        final HttpResponse<InputStream> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("Failed to fetch remote build info: HTTP " + response.statusCode());
         }
 
-        runCommand(repoDirectory, command, "build plugin");
-    }
-
-    private Path locateBuiltJar(final Path repoDirectory) throws IOException {
-        final String configured = this.plugin.getConfig().getString("self-update.artifact-path", "").trim();
-        if (!configured.isBlank()) {
-            final Path artifact = repoDirectory.resolve(configured).normalize();
-            if (!Files.isRegularFile(artifact)) {
-                throw new IllegalStateException("Configured self-update.artifact-path does not exist: " + artifact);
-            }
-            return artifact;
-        }
-
-        final Path libsDirectory = repoDirectory.resolve("build").resolve("libs");
-        if (!Files.isDirectory(libsDirectory)) {
-            throw new IllegalStateException("Build output folder does not exist: " + libsDirectory);
-        }
-
-        try (Stream<Path> stream = Files.list(libsDirectory)) {
-            return stream
-                .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().endsWith(".jar"))
-                .filter(path -> !path.getFileName().toString().endsWith("-sources.jar"))
-                .filter(path -> !path.getFileName().toString().endsWith("-javadoc.jar"))
-                .max(Comparator.comparingLong(path -> path.toFile().lastModified()))
-                .orElseThrow(() -> new IllegalStateException("No built plugin jar found in " + libsDirectory));
+        try (InputStream input = response.body()) {
+            final Properties properties = new Properties();
+            properties.load(input);
+            return BuildInfo.from(properties);
         }
     }
 
-    private Path deployToUpdateFolder(final Path builtJar) throws IOException {
+    private String requiredUrl(final String key) {
+        final String configured = this.plugin.getConfig().getString(key, "").trim();
+        if (configured.isBlank()) {
+            throw new IllegalStateException("Missing config value: " + key);
+        }
+        return configured;
+    }
+
+    private String fetchRemoteSha1(final String sha1Url) throws IOException, InterruptedException {
+        final HttpRequest request = HttpRequest.newBuilder(URI.create(sha1Url)).GET().build();
+        final HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("Failed to fetch remote plugin sha1: HTTP " + response.statusCode());
+        }
+
+        final String body = response.body().trim();
+        if (body.isBlank()) {
+            throw new IOException("Remote plugin sha1 response was empty.");
+        }
+
+        final int separator = body.indexOf(' ');
+        return separator >= 0 ? body.substring(0, separator).trim() : body;
+    }
+
+    private String currentPluginJarSha1() throws IOException {
+        return sha1(resolveCurrentPluginJar());
+    }
+
+    private boolean isUpdateAvailable(
+        final BuildInfo localBuild,
+        final BuildInfo remoteBuild,
+        final String localSha1,
+        final String remoteSha1
+    ) {
+        if (localBuild.hasKnownCommit() && remoteBuild.hasKnownCommit()) {
+            return !localBuild.commit().equalsIgnoreCase(remoteBuild.commit());
+        }
+
+        return !remoteSha1.equalsIgnoreCase(localSha1);
+    }
+
+    private Path downloadJar(final String jarUrl, final String expectedSha1) throws IOException, InterruptedException {
+        final Path tempJar = Files.createTempFile("sneakyresource-update-", ".jar");
+        final HttpRequest request = HttpRequest.newBuilder(URI.create(jarUrl)).GET().build();
+        final HttpResponse<Path> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofFile(tempJar));
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            Files.deleteIfExists(tempJar);
+            throw new IOException("Failed to download updated plugin jar: HTTP " + response.statusCode());
+        }
+
+        final String actualSha1 = sha1(tempJar);
+        if (!expectedSha1.equalsIgnoreCase(actualSha1)) {
+            Files.deleteIfExists(tempJar);
+            throw new IOException("Downloaded plugin jar sha1 mismatch. Expected " + expectedSha1 + " but got " + actualSha1);
+        }
+
+        return tempJar;
+    }
+
+    private Path deployToUpdateFolder(final Path downloadedJar) throws IOException {
         final Server server = this.plugin.getServer();
         final Path updateFolder = server.getUpdateFolderFile().toPath();
         Files.createDirectories(updateFolder);
-        final Path deployedJar = updateFolder.resolve(builtJar.getFileName().toString());
-        Files.copy(builtJar, deployedJar, StandardCopyOption.REPLACE_EXISTING);
+
+        final Path currentJar = resolveCurrentPluginJar();
+        final Path deployedJar = updateFolder.resolve(currentJar.getFileName().toString());
+        Files.copy(downloadedJar, deployedJar, StandardCopyOption.REPLACE_EXISTING);
         return deployedJar;
     }
 
-    private Path resolveConfiguredPath(final String pathKey) {
-        final String configured = this.plugin.getConfig().getString(pathKey);
-        if (configured == null || configured.isBlank()) {
-            throw new IllegalStateException("Missing config value: " + pathKey);
-        }
-
-        final Path path = Path.of(configured);
-        if (path.isAbsolute()) {
-            return path.normalize();
-        }
-
-        final Path resolved = this.serverRoot.resolve(path).normalize();
-        if (Files.exists(resolved) || !configured.startsWith("sneakyresource/")) {
-            return resolved;
-        }
-
-        // Match SyncService path handling for the repo checked out next to the server root.
-        return this.serverRoot.resolveSibling(path).normalize();
+    private Path replaceCurrentPluginJar(final Path downloadedJar) throws IOException {
+        final Path currentJar = resolveCurrentPluginJar();
+        Files.copy(downloadedJar, currentJar, StandardCopyOption.REPLACE_EXISTING);
+        return currentJar;
     }
 
-    private Path resolveRepositoryDirectory(final String pathKey) {
-        final String configured = this.plugin.getConfig().getString(pathKey);
-        if (configured == null || configured.isBlank()) {
-            throw new IllegalStateException("Missing config value: " + pathKey);
+    private Path resolveCurrentPluginJar() throws IOException {
+        final Path currentJar;
+        try {
+            currentJar = Path.of(this.plugin.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).normalize();
+        } catch (Exception exception) {
+            throw new IOException("Unable to locate current plugin jar.", exception);
         }
 
-        final Path configuredPath = Path.of(configured);
-        for (final Path candidate : repositoryCandidates(configuredPath)) {
-            if (isGitRepository(candidate)) {
-                return candidate;
+        if (!Files.isRegularFile(currentJar)) {
+            throw new IOException("Current plugin is not running from a jar file: " + currentJar);
+        }
+        return currentJar;
+    }
+
+    private String sha1(final Path file) throws IOException {
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-1 is unavailable", exception);
+        }
+
+        try (InputStream input = Files.newInputStream(file)) {
+            final byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
             }
         }
 
-        throw new MissingRepositoryException("self-update.repository-directory does not exist: " + resolveConfiguredPath(pathKey));
+        return HexFormat.of().formatHex(digest.digest());
     }
 
-    private List<Path> repositoryCandidates(final Path configuredPath) {
-        final Set<Path> candidates = new LinkedHashSet<>();
-        if (configuredPath.isAbsolute()) {
-            candidates.add(configuredPath.normalize());
-            return new ArrayList<>(candidates);
+    private record BuildInfo(String version, String commit) {
+        static BuildInfo from(final Properties properties) {
+            return new BuildInfo(
+                valueOrUnknown(properties.getProperty("version")),
+                valueOrUnknown(properties.getProperty("commit"))
+            );
         }
 
-        final Path primary = this.serverRoot.resolve(configuredPath).normalize();
-        final Path sibling = this.serverRoot.resolveSibling(configuredPath).normalize();
-        final Path pluginsParent = this.plugin.getDataFolder().toPath().getParent();
-
-        candidates.add(primary);
-        candidates.add(sibling);
-        if (pluginsParent != null) {
-            candidates.add(pluginsParent.resolve(configuredPath).normalize());
+        static BuildInfo unknown() {
+            return new BuildInfo("unknown", "unknown");
         }
 
-        final String directoryName = configuredPath.getFileName() != null ? configuredPath.getFileName().toString() : configuredPath.toString();
-        for (final Path base : List.copyOf(candidates)) {
-            final Path parent = base.getParent();
-            if (parent != null) {
-                final Path caseInsensitive = resolveCaseInsensitiveChild(parent, directoryName);
-                if (caseInsensitive != null) {
-                    candidates.add(caseInsensitive.normalize());
-                }
-            }
+        boolean hasKnownCommit() {
+            return !"unknown".equalsIgnoreCase(this.commit);
         }
 
-        return new ArrayList<>(candidates);
-    }
-
-    private boolean isGitRepository(final Path path) {
-        return Files.isDirectory(path) && Files.exists(path.resolve(".git"));
-    }
-
-    private Path resolveCaseInsensitiveChild(final Path parent, final String expectedName) {
-        if (!Files.isDirectory(parent)) {
-            return null;
+        private static String valueOrUnknown(@Nullable final String value) {
+            return value == null || value.isBlank() ? "unknown" : value.trim();
         }
-
-        try (Stream<Path> stream = Files.list(parent)) {
-            return stream
-                .filter(Files::isDirectory)
-                .filter(path -> path.getFileName().toString().equalsIgnoreCase(expectedName))
-                .findFirst()
-                .orElse(null);
-        } catch (IOException exception) {
-            return null;
-        }
-    }
-
-    private List<String> splitCommand(final String commandLine) {
-        final List<String> parts = new ArrayList<>();
-        final StringBuilder current = new StringBuilder();
-        boolean inQuotes = false;
-
-        for (int i = 0; i < commandLine.length(); i++) {
-            final char ch = commandLine.charAt(i);
-            if (ch == '"') {
-                inQuotes = !inQuotes;
-                continue;
-            }
-            if (Character.isWhitespace(ch) && !inQuotes) {
-                if (current.length() > 0) {
-                    parts.add(current.toString());
-                    current.setLength(0);
-                }
-                continue;
-            }
-            current.append(ch);
-        }
-
-        if (current.length() > 0) {
-            parts.add(current.toString());
-        }
-
-        if (parts.isEmpty()) {
-            throw new IllegalStateException("self-update.build-command is empty.");
-        }
-        return parts;
-    }
-
-    private String runCommand(final Path workingDirectory, final List<String> command, final String description) throws IOException, InterruptedException {
-        final ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.directory(workingDirectory.toFile());
-        processBuilder.redirectErrorStream(true);
-
-        final Process process = processBuilder.start();
-        final StringBuilder output = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append(System.lineSeparator());
-            }
-        }
-
-        final int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new IOException("Failed to " + description + " (exit " + exitCode + "): " + tail(output.toString(), 30));
-        }
-
-        return output.toString();
-    }
-
-    private String tail(final String text, final int maxLines) {
-        final String[] lines = text.split("\\R");
-        final int start = Math.max(0, lines.length - maxLines);
-        return String.join(System.lineSeparator(), Arrays.copyOfRange(lines, start, lines.length));
-    }
-
-    private boolean isWindows() {
-        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
     }
 }

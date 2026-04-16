@@ -3,31 +3,38 @@ run-minecraft-reload-after-sync: true
 
 resource-pack:
   enabled: true
-  source-directory: "SneakySasquatch/sasquatchresourcepack"
+  source-directory: "SneakySasquatchPlug/sasquatchresourcepack"
   output-zip: "plugins/SneakyResource/generated/sasquatchresourcepack.zip"
   write-sha1-file: true
   sha1-output: "plugins/SneakyResource/generated/sasquatchresourcepack.zip.sha1"
-  public-url: "https://raw.githubusercontent.com/SmokeSlate/sneakyresource/pack-dist/sasquatchresourcepack.zip"
-  sha1-url: "https://raw.githubusercontent.com/SmokeSlate/sneakyresource/pack-dist/sasquatchresourcepack.zip.sha1"
+  public-url: ""
+  sha1-url: ""
   required: false
   prompt: "This server uses the SneakyResource pack."
   send-on-join: true
   send-delay-ticks: 40
   retry-if-pending-ticks: 100
+  self-hosted:
+    enabled: true
+    public-base-url: "http://sneakysasquatch.minekeep.dev:2053"
+    scheme: "http"
+    hostname: "sneakysasquatch.minekeep.dev"
+    public-port: 2053
+    port: 2053
+    zip-path: "/sasquatchresourcepack.zip"
+    sha1-path: "/sasquatchresourcepack.zip.sha1"
 
 datapack:
   enabled: true
-  source-directory: "SneakySasquatch/datapack"
-  destination-directory: "world/datapacks/sneakyresource"
+  source-directory: "SneakySasquatchPlug/datapack"
+  destination-directory: "SneakySasquatch/datapacks/sneakyresource"
 
 self-update:
   enabled: true
-  run-on-startup: true
-  repository-directory: "SneakySasquatch"
-  branch: "main"
-  build-command: ""
-  artifact-path: ""
-  build-when-unchanged: false
+  run-on-startup: false
+  jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar"
+  jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar.sha1"
+  build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/build-info.properties"
   stage-jar-in-update-folder: true
   sync-after-update: true
   sync-when-unchanged: true
