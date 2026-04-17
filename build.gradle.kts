@@ -20,6 +20,19 @@ val gitCommit: String by lazy {
     }
 }
 
+val gitBranch: String by lazy {
+    try {
+        val output = ByteArrayOutputStream()
+        exec {
+            commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+            standardOutput = output
+        }
+        output.toString().trim().ifBlank { "unknown" }
+    } catch (_: Exception) {
+        "unknown"
+    }
+}
+
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
@@ -43,7 +56,8 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.processResources {
     val props = mapOf(
         "version" to project.version,
-        "commit" to gitCommit
+        "commit" to gitCommit,
+        "branch" to gitBranch
     )
     inputs.properties(props)
     filteringCharset = "UTF-8"

@@ -103,12 +103,15 @@ This build targets Paper `1.21.11`.
 
 By default this uses:
 
-- `self-update.jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar"`
-- `self-update.jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar.sha1"`
-- `self-update.build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/build-info.properties"`
+- `self-update.branch: "pack-dist"`
+- `self-update.jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar"`
+- `self-update.jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar.sha1"`
+- `self-update.build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/build-info.properties"`
 - `self-update.run-on-startup: true`
 - `self-update.sync-when-unchanged: true`
 - `self-update.restart-after-update: true`
+
+Set `self-update.branch` to any published branch you want this server to follow. The `{branch}` placeholder is expanded in all three self-update URLs, so branch switches do not require editing each URL separately.
 
 Paper recommends staging updated plugin jars in the configured update folder and applying them on restart:
 

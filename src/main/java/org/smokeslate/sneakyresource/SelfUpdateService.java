@@ -71,6 +71,16 @@ final class SelfUpdateService {
         return readBundledBuildInfo().commit();
     }
 
+    @Nullable
+    String currentBuildBranch() {
+        return readBundledBuildInfo().branch();
+    }
+
+    String configuredUpdateBranch() {
+        final String configured = this.plugin.getConfig().getString("self-update.branch", "pack-dist");
+        return configured == null || configured.isBlank() ? "pack-dist" : configured.trim();
+    }
+
     private BuildInfo readBundledBuildInfo() {
         try (InputStream input = this.plugin.getResource("build-info.properties")) {
             if (input == null) {
@@ -101,11 +111,20 @@ final class SelfUpdateService {
     }
 
     private String requiredUrl(final String key) {
-        final String configured = this.plugin.getConfig().getString(key, "").trim();
+        final String configured = resolvedUrl(key);
         if (configured.isBlank()) {
             throw new IllegalStateException("Missing config value: " + key);
         }
         return configured;
+    }
+
+    private String resolvedUrl(final String key) {
+        final String configured = this.plugin.getConfig().getString(key, "");
+        if (configured == null) {
+            return "";
+        }
+
+        return configured.trim().replace("{branch}", configuredUpdateBranch());
     }
 
     private String fetchRemoteSha1(final String sha1Url) throws IOException, InterruptedException {
@@ -209,16 +228,17 @@ final class SelfUpdateService {
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    private record BuildInfo(String version, String commit) {
+    private record BuildInfo(String version, String commit, String branch) {
         static BuildInfo from(final Properties properties) {
             return new BuildInfo(
                 valueOrUnknown(properties.getProperty("version")),
-                valueOrUnknown(properties.getProperty("commit"))
+                valueOrUnknown(properties.getProperty("commit")),
+                valueOrUnknown(properties.getProperty("branch"))
             );
         }
 
         static BuildInfo unknown() {
-            return new BuildInfo("unknown", "unknown");
+            return new BuildInfo("unknown", "unknown", "unknown");
         }
 
         boolean hasKnownCommit() {

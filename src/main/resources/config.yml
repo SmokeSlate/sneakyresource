@@ -39,9 +39,10 @@ nexo:
 self-update:
   enabled: true
   run-on-startup: false
-  jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar"
-  jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar.sha1"
-  build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/build-info.properties"
+  branch: "pack-dist"
+  jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar"
+  jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar.sha1"
+  build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/build-info.properties"
   stage-jar-in-update-folder: true
   sync-after-update: true
   sync-when-unchanged: true

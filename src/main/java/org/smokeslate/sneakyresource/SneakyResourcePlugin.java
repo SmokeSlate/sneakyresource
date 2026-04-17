@@ -119,6 +119,10 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         if (currentCommit != null && !currentCommit.isBlank()) {
             sender.sendMessage(Component.text("Build commit: " + shortCommit(currentCommit)));
         }
+        final String currentBranch = this.selfUpdateService.currentBuildBranch();
+        if (currentBranch != null && !currentBranch.isBlank() && !"unknown".equalsIgnoreCase(currentBranch)) {
+            sender.sendMessage(Component.text("Build branch: " + currentBranch));
+        }
 
         if (this.lastReport == null) {
             sender.sendMessage(Component.text("No sync has run yet."));
@@ -139,6 +143,7 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         }
 
         sender.sendMessage(Component.text("Custom block integration: " + this.customBlockService.integrationName()));
+        sender.sendMessage(Component.text("Self-update branch: " + this.selfUpdateService.configuredUpdateBranch()));
 
         if (this.lastSelfUpdateReport == null) {
             sender.sendMessage(Component.text("No self-update has run yet."));
