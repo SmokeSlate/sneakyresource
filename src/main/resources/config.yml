@@ -33,8 +33,6 @@ nexo:
   enabled: true
   source-directory: "SneakySasquatchPlug/nexo"
   root-directory: "plugins/Nexo"
-  sync-external-pack: true
-  external-pack-name: "sasquatchresourcepack"
 
 self-update:
   enabled: true

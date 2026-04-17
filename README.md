@@ -8,8 +8,8 @@ The plugin reads the repo checkout directly from disk, then:
 - writes a SHA-1 file for that zip
 - mirrors `datapack/` into your Paper world datapacks folder
 - syncs the Nexo item/recipe configs for custom blocks when Nexo is installed
-- mirrors `sasquatchresourcepack/` into Nexo's `pack/external_packs/` when Nexo is installed
-- places custom `Cashe` and rock blocks through Nexo when available, otherwise falls back to reserved vanilla block states
+- mirrors `sasquatchresourcepack/assets/` directly into Nexo's `pack/assets/` when Nexo is installed
+- expects Nexo to own `Cashe` and rock item/block behaviour entirely
 - runs `minecraft:reload` after syncing
 
 If no external `sneakyresource/` checkout exists, the plugin falls back to the bundled pack and datapack that are shipped inside the jar.
@@ -38,7 +38,7 @@ With that layout:
 - `SneakySasquatch/datapack` is the datapack source
 - `SneakySasquatch/nexo` is the Nexo config source
 - `world/datapacks/sneakyresource` is the live server datapack destination
-- `plugins/Nexo` is the Nexo root used for synced items, recipes, and external pack assets
+- `plugins/Nexo` is the Nexo root used for synced items, recipes, and pack assets
 
 The plugin also falls back to the older sibling layout automatically:
 
@@ -76,19 +76,14 @@ For fully local hosting, upload the jar and restart the server. The plugin will 
 
 ## Custom Blocks
 
-When Nexo is installed and `nexo.enabled: true`, SneakyResource treats Nexo as the source of truth for the custom block set:
+When Nexo is installed and `nexo.enabled: true`, SneakyResource treats Nexo as the only source of truth for this custom block set:
 
 - `nexo/items/sasquatch_blocks.yml` defines `cashe`, `rock`, `rock_small_1`, `rock_small_2`, and `rock_small_3`
 - `nexo/recipes/` defines the crafting recipes for those Nexo items
-- `sasquatchresourcepack/` is mirrored into `plugins/Nexo/pack/external_packs/<external-pack-name>` so Nexo can merge the existing models and textures into its generated pack
-- the plugin switches its runtime block integration to Nexo and keeps only the Cashe inventory persistence logic locally
+- `sasquatchresourcepack/assets/` is mirrored directly into `plugins/Nexo/pack/assets/`
+- `cashe` uses Nexo's built-in `storage` sub-mechanic, so container state is managed by Nexo rather than this plugin
 
-If Nexo is not installed, the plugin falls back to the old reserved-state integration:
-
-- `Cashe` uses a reserved `jigsaw` orientation
-- rocks use reserved `pink_petals` states
-
-Existing reserved-state blocks already placed in a world are not auto-converted to Nexo blocks by this change.
+If Nexo is not installed, these custom items/blocks are unavailable.
 
 This build targets Paper `1.21.11`.
 

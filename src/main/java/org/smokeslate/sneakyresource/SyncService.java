@@ -109,15 +109,20 @@ final class SyncService {
         syncManagedDirectory(nexoSource.resolve("recipes").resolve("shaped"), nexoRoot.resolve("recipes").resolve("shaped").resolve("sneakyresource"));
         syncManagedDirectory(nexoSource.resolve("recipes").resolve("stonecutting"), nexoRoot.resolve("recipes").resolve("stonecutting").resolve("sneakyresource"));
 
-        if (this.plugin.getConfig().getBoolean("nexo.sync-external-pack", true)) {
-            final Path resourcePackSource = resolveSourceDirectory(
-                "resource-pack.source-directory",
-                "bundled/resourcepack/",
-                "bundled/resourcepack"
-            );
-            final String externalPackName = this.plugin.getConfig().getString("nexo.external-pack-name", "sasquatchresourcepack").trim();
-            syncManagedDirectory(resourcePackSource, nexoRoot.resolve("pack").resolve("external_packs").resolve(externalPackName));
-        }
+        final Path resourcePackSource = resolveSourceDirectory(
+            "resource-pack.source-directory",
+            "bundled/resourcepack/",
+            "bundled/resourcepack"
+        );
+        final Path resourcePackAssets = resourcePackSource.resolve("assets");
+        syncManagedDirectory(
+            resourcePackAssets.resolve("sasquatch"),
+            nexoRoot.resolve("pack").resolve("assets").resolve("sasquatch")
+        );
+        syncManagedDirectory(
+            resourcePackAssets.resolve("minecraft"),
+            nexoRoot.resolve("pack").resolve("assets").resolve("minecraft")
+        );
     }
 
     private Path resolveConfiguredPath(final String pathKey) {
