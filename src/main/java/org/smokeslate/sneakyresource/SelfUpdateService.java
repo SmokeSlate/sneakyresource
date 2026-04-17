@@ -44,26 +44,30 @@ final class SelfUpdateService {
         final boolean updateAvailable = isUpdateAvailable(localBuild, remoteBuild, localSha1, remoteSha1);
         final boolean syncAfterUpdate = config.getBoolean("self-update.sync-after-update", true);
         final boolean syncWhenUnchanged = config.getBoolean("self-update.sync-when-unchanged", true);
+        final boolean stageJarInUpdateFolder = config.getBoolean("self-update.stage-jar-in-update-folder", true);
 
         Path downloadedJar = null;
         Path deployedJar = null;
         boolean syncRan = false;
+        boolean syncDeferredUntilRestart = false;
 
         if (updateAvailable) {
             downloadedJar = downloadJar(jarUrl, remoteSha1);
-            if (config.getBoolean("self-update.stage-jar-in-update-folder", true)) {
+            if (stageJarInUpdateFolder) {
                 deployedJar = deployToUpdateFolder(downloadedJar);
             } else {
                 deployedJar = replaceCurrentPluginJar(downloadedJar);
             }
         }
 
-        if (syncAfterUpdate && (updateAvailable || syncWhenUnchanged)) {
+        if (syncAfterUpdate && updateAvailable) {
+            syncDeferredUntilRestart = true;
+        } else if (syncAfterUpdate && syncWhenUnchanged) {
             this.plugin.setLastReport(this.plugin.getSyncService().syncAll(true));
             syncRan = true;
         }
 
-        return new SelfUpdateReport(previousCommit, currentCommit, updateAvailable, downloadedJar, deployedJar, syncRan);
+        return new SelfUpdateReport(previousCommit, currentCommit, updateAvailable, downloadedJar, deployedJar, syncRan, syncDeferredUntilRestart);
     }
 
     @Nullable

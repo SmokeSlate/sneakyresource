@@ -50,6 +50,9 @@ final class SyncService {
         if (usingNexo) {
             syncNexoAssets();
             deleteManagedDirectoryIfConfigured("datapack.destination-directory");
+            if (runReload) {
+                Bukkit.getScheduler().runTask(this.plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "nexo reload"));
+            }
         }
 
         if (syncResourcePack) {
@@ -108,21 +111,15 @@ final class SyncService {
         syncManagedDirectory(nexoSource.resolve("items"), nexoRoot.resolve("items").resolve("sneakyresource"));
         syncManagedDirectory(nexoSource.resolve("recipes").resolve("shaped"), nexoRoot.resolve("recipes").resolve("shaped").resolve("sneakyresource"));
         syncManagedDirectory(nexoSource.resolve("recipes").resolve("stonecutting"), nexoRoot.resolve("recipes").resolve("stonecutting").resolve("sneakyresource"));
+        final Path externalPackRoot = nexoRoot.resolve("pack").resolve("external_packs").resolve("sasquatchresourcepack");
+        deleteManagedDirectory(externalPackRoot);
 
         final Path resourcePackSource = resolveSourceDirectory(
             "resource-pack.source-directory",
             "bundled/resourcepack/",
             "bundled/resourcepack"
         );
-        final Path resourcePackAssets = resourcePackSource.resolve("assets");
-        syncManagedDirectory(
-            resourcePackAssets.resolve("sasquatch"),
-            nexoRoot.resolve("pack").resolve("assets").resolve("sasquatch")
-        );
-        syncManagedDirectory(
-            resourcePackAssets.resolve("minecraft"),
-            nexoRoot.resolve("pack").resolve("assets").resolve("minecraft")
-        );
+        syncManagedDirectory(resourcePackSource, externalPackRoot);
     }
 
     private Path resolveConfiguredPath(final String pathKey) {
@@ -178,6 +175,10 @@ final class SyncService {
         }
 
         final Path path = resolveConfiguredPath(pathKey);
+        deleteManagedDirectory(path);
+    }
+
+    private void deleteManagedDirectory(final Path path) throws IOException {
         validateDestination(path);
         deleteRecursively(path);
     }

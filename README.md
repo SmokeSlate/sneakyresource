@@ -8,9 +8,9 @@ The plugin reads the repo checkout directly from disk, then:
 - writes a SHA-1 file for that zip
 - mirrors `datapack/` into your Paper world datapacks folder
 - syncs the Nexo item/recipe configs for custom blocks when Nexo is installed
-- mirrors `sasquatchresourcepack/assets/` directly into Nexo's `pack/assets/` when Nexo is installed
+- stages `sasquatchresourcepack/` into Nexo's `pack/external_packs/sasquatchresourcepack/` when Nexo is installed
 - expects Nexo to own `Cashe` and rock item/block behaviour entirely
-- runs `minecraft:reload` after syncing
+- runs `nexo reload` and `minecraft:reload` after syncing
 
 If no external `sneakyresource/` checkout exists, the plugin falls back to the bundled pack and datapack that are shipped inside the jar.
 
@@ -80,7 +80,7 @@ When Nexo is installed and `nexo.enabled: true`, SneakyResource treats Nexo as t
 
 - `nexo/items/sasquatch_blocks.yml` defines `cashe`, `rock`, `rock_small_1`, `rock_small_2`, and `rock_small_3`
 - `nexo/recipes/` defines the crafting recipes for those Nexo items
-- `sasquatchresourcepack/assets/` is mirrored directly into `plugins/Nexo/pack/assets/`
+- `sasquatchresourcepack/` is staged into `plugins/Nexo/pack/external_packs/sasquatchresourcepack/`
 - `cashe` uses Nexo's built-in `storage` sub-mechanic, so container state is managed by Nexo rather than this plugin
 
 If Nexo is not installed, these custom items/blocks are unavailable.
@@ -102,11 +102,13 @@ By default this uses:
 - `self-update.jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar"`
 - `self-update.jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar.sha1"`
 - `self-update.build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/build-info.properties"`
-- `self-update.run-on-startup: true`
+- `self-update.run-on-startup: false`
 - `self-update.sync-when-unchanged: true`
 - `self-update.restart-after-update: true`
 
 Set `self-update.branch` to any published branch you want this server to follow. The `{branch}` placeholder is expanded in all three self-update URLs, so branch switches do not require editing each URL separately.
+
+When a new jar is downloaded, SneakyResource now defers sync until after restart. That avoids running post-update sync logic from the old in-memory plugin classes before Paper has actually loaded the new jar.
 
 GitHub Actions publishes different dist branches automatically:
 
