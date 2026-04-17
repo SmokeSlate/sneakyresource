@@ -1,40 +1,69 @@
 {
-  "ambientocclusion": false,
+  "credit": "Made with Blockbench",
+  "ambientocclusion": true,
+  "texture_size": [64, 64],
   "textures": {
-    "front": "sasquatch:block/cashe",
-    "particle": "sasquatch:block/cashe",
-    "side": "minecraft:block/red_concrete",
-    "top": "minecraft:block/barrel_top",
-    "bottom": "minecraft:block/red_concrete"
+    "0": "sasquatch:block/cashe",
+    "particle": "sasquatch:block/cashe"
   },
   "elements": [
     {
-      "from": [1, 0, 1],
-      "to": [15, 14, 15],
+      "from": [-4, 1, 1],
+      "to": [20, 15, 15],
       "faces": {
         "north": {
-          "uv": [0, 0, 16, 16],
-          "texture": "#front"
+          "uv": [0, 0, 5.75, 3.5],
+          "texture": "#0"
         },
         "east": {
-          "uv": [0, 0, 14, 14],
-          "texture": "#side"
+          "uv": [0, 7, 3.5, 10.5],
+          "texture": "#0"
         },
         "south": {
-          "uv": [0, 0, 16, 16],
-          "texture": "#front"
+          "uv": [0, 3.5, 5.75, 7],
+          "texture": "#0"
         },
         "west": {
-          "uv": [0, 0, 14, 14],
-          "texture": "#side"
+          "uv": [3.5, 7, 7, 10.5],
+          "texture": "#0"
         },
         "up": {
-          "uv": [0, 0, 14, 14],
-          "texture": "#top"
+          "uv": [11.5, 3.5, 5.75, 0],
+          "texture": "#0"
         },
         "down": {
-          "uv": [0, 0, 14, 14],
-          "texture": "#bottom"
+          "uv": [11.5, 3.5, 5.75, 7],
+          "texture": "#0"
+        }
+      }
+    },
+    {
+      "from": [7, 13.01, 15],
+      "to": [9, 15.01, 16],
+      "faces": {
+        "north": {
+          "uv": [7, 7, 7.5, 7.5],
+          "texture": "#0"
+        },
+        "east": {
+          "uv": [7, 7, 7.25, 7.5],
+          "texture": "#0"
+        },
+        "south": {
+          "uv": [7, 7, 7.5, 7.5],
+          "texture": "#0"
+        },
+        "west": {
+          "uv": [7, 7, 7.25, 7.5],
+          "texture": "#0"
+        },
+        "up": {
+          "uv": [7, 7, 7.5, 7.25],
+          "texture": "#0"
+        },
+        "down": {
+          "uv": [7, 7.25, 7.5, 7.5],
+          "texture": "#0"
         }
       }
     }
