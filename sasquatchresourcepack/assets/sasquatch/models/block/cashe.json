@@ -2,24 +2,24 @@
   "credit": "Made with Blockbench",
   "ambientocclusion": true,
   "textures": {
-    "front": "sasquatch:block/cashe_front",
-    "back": "sasquatch:block/cashe_back",
-    "left": "sasquatch:block/cashe_left",
-    "right": "sasquatch:block/cashe_right",
-    "top": "sasquatch:block/cashe_top",
-    "bottom": "sasquatch:block/cashe_bottom",
-    "latch_front": "sasquatch:block/cashe_latch_front",
-    "latch_back": "sasquatch:block/cashe_latch_back",
-    "latch_left": "sasquatch:block/cashe_latch_left",
-    "latch_right": "sasquatch:block/cashe_latch_right",
-    "latch_top": "sasquatch:block/cashe_latch_top",
-    "latch_bottom": "sasquatch:block/cashe_latch_bottom",
-    "particle": "sasquatch:block/cashe_front"
+    "front": "sasquatch:block/cache_front",
+    "back": "sasquatch:block/cache_back",
+    "left": "sasquatch:block/cache_left",
+    "right": "sasquatch:block/cache_right",
+    "top": "sasquatch:block/cache_top",
+    "bottom": "sasquatch:block/cache_bottom",
+    "latch_front": "sasquatch:block/cache_latch_front",
+    "latch_back": "sasquatch:block/cache_latch_back",
+    "latch_left": "sasquatch:block/cache_latch_left",
+    "latch_right": "sasquatch:block/cache_latch_right",
+    "latch_top": "sasquatch:block/cache_latch_top",
+    "latch_bottom": "sasquatch:block/cache_latch_bottom",
+    "particle": "sasquatch:block/cache_front"
   },
   "elements": [
     {
-      "from": [-4, 1, 1],
-      "to": [20, 15, 15],
+      "from": [-4, 0, 1],
+      "to": [20, 14, 15],
       "faces": {
         "north": {
           "uv": [0, 0, 16, 16],
@@ -48,8 +48,8 @@
       }
     },
     {
-      "from": [7, 13.01, 15],
-      "to": [9, 15.01, 16],
+      "from": [7, 12.01, 15],
+      "to": [9, 14.01, 16],
       "faces": {
         "north": {
           "uv": [0, 0, 16, 16],
