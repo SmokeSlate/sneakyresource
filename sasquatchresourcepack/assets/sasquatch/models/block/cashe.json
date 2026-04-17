@@ -1,10 +1,20 @@
 {
   "credit": "Made with Blockbench",
   "ambientocclusion": true,
-  "texture_size": [64, 64],
   "textures": {
-    "0": "sasquatch:block/cashe",
-    "particle": "sasquatch:block/cashe"
+    "front": "sasquatch:block/cashe_front",
+    "back": "sasquatch:block/cashe_back",
+    "left": "sasquatch:block/cashe_left",
+    "right": "sasquatch:block/cashe_right",
+    "top": "sasquatch:block/cashe_top",
+    "bottom": "sasquatch:block/cashe_bottom",
+    "latch_front": "sasquatch:block/cashe_latch_front",
+    "latch_back": "sasquatch:block/cashe_latch_back",
+    "latch_left": "sasquatch:block/cashe_latch_left",
+    "latch_right": "sasquatch:block/cashe_latch_right",
+    "latch_top": "sasquatch:block/cashe_latch_top",
+    "latch_bottom": "sasquatch:block/cashe_latch_bottom",
+    "particle": "sasquatch:block/cashe_front"
   },
   "elements": [
     {
@@ -12,28 +22,28 @@
       "to": [20, 15, 15],
       "faces": {
         "north": {
-          "uv": [0, 0, 5.75, 3.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#front"
         },
         "east": {
-          "uv": [0, 7, 3.5, 10.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#right"
         },
         "south": {
-          "uv": [0, 3.5, 5.75, 7],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#back"
         },
         "west": {
-          "uv": [3.5, 7, 7, 10.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#left"
         },
         "up": {
-          "uv": [11.5, 3.5, 5.75, 0],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#top"
         },
         "down": {
-          "uv": [11.5, 3.5, 5.75, 7],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#bottom"
         }
       }
     },
@@ -42,28 +52,28 @@
       "to": [9, 15.01, 16],
       "faces": {
         "north": {
-          "uv": [7, 7, 7.5, 7.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#latch_front"
         },
         "east": {
-          "uv": [7, 7, 7.25, 7.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#latch_right"
         },
         "south": {
-          "uv": [7, 7, 7.5, 7.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#latch_back"
         },
         "west": {
-          "uv": [7, 7, 7.25, 7.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#latch_left"
         },
         "up": {
-          "uv": [7, 7, 7.5, 7.25],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#latch_top"
         },
         "down": {
-          "uv": [7, 7.25, 7.5, 7.5],
-          "texture": "#0"
+          "uv": [0, 0, 16, 16],
+          "texture": "#latch_bottom"
         }
       }
     }
