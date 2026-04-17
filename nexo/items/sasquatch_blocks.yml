@@ -4,14 +4,14 @@ cashe:
   lore:
     - "<gray>Custom container item for 1.21.11+"
   Pack:
-    model: sasquatch:block/cashe
+    model: sasquatch:item/cashe
   Components:
     item_model: nexo:cashe
   Mechanics:
     custom_block:
       type: NOTEBLOCK
       custom_variation: 1
-      model: cashe
+      model: sasquatch:block/cashe
       drop:
         loots:
           - nexo_item: cashe
@@ -23,14 +23,14 @@ rock:
   lore:
     - "<dark_gray>Decorative stone"
   Pack:
-    model: sasquatch:block/rock
+    model: sasquatch:item/rock
   Components:
     item_model: nexo:rock
   Mechanics:
     custom_block:
       type: STRINGBLOCK
       custom_variation: 1
-      model: rock
+      model: sasquatch:block/rock
       hardness: 1
       requires_supporting: true
       drop:
@@ -44,14 +44,14 @@ rock_small_1:
   lore:
     - "<dark_gray>Decorative stone"
   Pack:
-    model: sasquatch:block/rock_small_1
+    model: sasquatch:item/rock_small_1
   Components:
     item_model: nexo:rock_small_1
   Mechanics:
     custom_block:
       type: STRINGBLOCK
       custom_variation: 2
-      model: rock_small_1
+      model: sasquatch:block/rock_small_1
       hardness: 1
       requires_supporting: true
       drop:
@@ -65,14 +65,14 @@ rock_small_2:
   lore:
     - "<dark_gray>Decorative stone"
   Pack:
-    model: sasquatch:block/rock_small_2
+    model: sasquatch:item/rock_small_2
   Components:
     item_model: nexo:rock_small_2
   Mechanics:
     custom_block:
       type: STRINGBLOCK
       custom_variation: 3
-      model: rock_small_2
+      model: sasquatch:block/rock_small_2
       hardness: 1
       requires_supporting: true
       drop:
@@ -86,14 +86,14 @@ rock_small_3:
   lore:
     - "<dark_gray>Decorative stone"
   Pack:
-    model: sasquatch:block/rock_small_3
+    model: sasquatch:item/rock_small_3
   Components:
     item_model: nexo:rock_small_3
   Mechanics:
     custom_block:
       type: STRINGBLOCK
       custom_variation: 4
-      model: rock_small_3
+      model: sasquatch:block/rock_small_3
       hardness: 1
       requires_supporting: true
       drop:

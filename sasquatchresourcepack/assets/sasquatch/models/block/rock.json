@@ -1,3 +1,32 @@
 {
-  "parent": "sasquatch:item/rock"
+  "textures": {
+    "0": "sasquatch:item/rock",
+    "particle": "sasquatch:item/rock"
+  },
+  "elements": [
+    {
+      "from": [5, 0, 5],
+      "to": [13, 2, 13],
+      "faces": {
+        "north": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "east": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "south": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "west": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "up": { "uv": [0, 0, 16, 16], "texture": "#0" },
+        "down": { "uv": [0, 0, 16, 16], "texture": "#0" }
+      }
+    },
+    {
+      "from": [3, 0, 3],
+      "to": [11, 1, 11],
+      "faces": {
+        "north": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "east": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "south": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "west": { "uv": [0, 0, 16, 4], "texture": "#0" },
+        "up": { "uv": [0, 0, 16, 16], "texture": "#0" },
+        "down": { "uv": [0, 0, 16, 16], "texture": "#0" }
+      }
+    }
+  ]
 }
