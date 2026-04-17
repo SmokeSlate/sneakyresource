@@ -1,0 +1,12 @@
+cashe:
+  result:
+    nexo_item: cashe
+  ingredients:
+    G:
+      minecraft_type: GOLD_INGOT
+    T:
+      minecraft_type: TRAPPED_CHEST
+  shape:
+    - GGG
+    - GTG
+    - GGG

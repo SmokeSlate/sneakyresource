@@ -29,6 +29,13 @@ datapack:
   source-directory: "SneakySasquatchPlug/datapack"
   destination-directory: "SneakySasquatch/datapacks/sneakyresource"
 
+nexo:
+  enabled: true
+  source-directory: "SneakySasquatchPlug/nexo"
+  root-directory: "plugins/Nexo"
+  sync-external-pack: true
+  external-pack-name: "sasquatchresourcepack"
+
 self-update:
   enabled: true
   run-on-startup: false

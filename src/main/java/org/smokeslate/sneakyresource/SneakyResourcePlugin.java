@@ -246,7 +246,8 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     }
 
     boolean shouldSendResourcePack() {
-        return getConfig().getBoolean("resource-pack.enabled", true)
+        return !isNexoIntegrationActive()
+            && getConfig().getBoolean("resource-pack.enabled", true)
             && getConfig().getBoolean("resource-pack.send-on-join", true);
     }
 
@@ -291,6 +292,18 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     }
 
     private CustomBlockService createCustomBlockService() {
+        if (isNexoIntegrationActive()) {
+            return new NexoCustomBlockService(this);
+        }
+
+        if (getConfig().getBoolean("nexo.enabled", true)) {
+            getLogger().warning("Nexo custom block integration is unavailable; falling back to reserved vanilla block states.");
+        }
         return new ReservedStateCustomBlockService(this);
+    }
+
+    boolean isNexoIntegrationActive() {
+        return getConfig().getBoolean("nexo.enabled", true)
+            && getServer().getPluginManager().isPluginEnabled("Nexo");
     }
 }

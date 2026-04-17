@@ -1,0 +1,92 @@
+cashe:
+  itemname: "<red>Cashe"
+  material: TRAPPED_CHEST
+  lore:
+    - "<gray>Custom container item for 1.21.11+"
+  Components:
+    item_model: sasquatch:cashe
+  Mechanics:
+    custom_block:
+      type: NOTEBLOCK
+      custom_variation: 1
+      model: sasquatch:block/cashe
+      drop:
+        loots:
+          - nexo_item: cashe
+            probability: 1.0
+
+rock:
+  itemname: "<gray>Rock"
+  material: FLINT
+  lore:
+    - "<dark_gray>Decorative stone"
+  Components:
+    item_model: sasquatch:rock
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 1
+      model: sasquatch:block/rock
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock
+            probability: 1.0
+
+rock_small_1:
+  itemname: "<gray>Small Rock 1"
+  material: FLINT
+  lore:
+    - "<dark_gray>Decorative stone"
+  Components:
+    item_model: sasquatch:rock_small_1
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 2
+      model: sasquatch:block/rock_small_1
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock_small_1
+            probability: 1.0
+
+rock_small_2:
+  itemname: "<gray>Small Rock 2"
+  material: FLINT
+  lore:
+    - "<dark_gray>Decorative stone"
+  Components:
+    item_model: sasquatch:rock_small_2
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 3
+      model: sasquatch:block/rock_small_2
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock_small_2
+            probability: 1.0
+
+rock_small_3:
+  itemname: "<gray>Small Rock 3"
+  material: FLINT
+  lore:
+    - "<dark_gray>Decorative stone"
+  Components:
+    item_model: sasquatch:rock_small_3
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 4
+      model: sasquatch:block/rock_small_3
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock_small_3
+            probability: 1.0

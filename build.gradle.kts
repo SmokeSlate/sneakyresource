@@ -23,10 +23,12 @@ val gitCommit: String by lazy {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.nexomc.com/releases")
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("com.nexomc:nexo:1.15.0")
 }
 
 java {
@@ -54,6 +56,10 @@ tasks.processResources {
     }
     from("datapack") {
         into("bundled/datapack")
+        exclude("**/.DS_Store")
+    }
+    from("nexo") {
+        into("bundled/nexo")
         exclude("**/.DS_Store")
     }
 }
