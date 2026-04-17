@@ -6,7 +6,7 @@ cashe:
   Pack:
     model: sasquatch:item/cashe
   Components:
-    item_model: nexo:cashe
+    item_model: sasquatch:cashe
   Mechanics:
     custom_block:
       type: NOTEBLOCK
@@ -25,7 +25,7 @@ rock:
   Pack:
     model: sasquatch:item/rock
   Components:
-    item_model: nexo:rock
+    item_model: sasquatch:rock
   Mechanics:
     custom_block:
       type: STRINGBLOCK
@@ -46,7 +46,7 @@ rock_small_1:
   Pack:
     model: sasquatch:item/rock_small_1
   Components:
-    item_model: nexo:rock_small_1
+    item_model: sasquatch:rock_small_1
   Mechanics:
     custom_block:
       type: STRINGBLOCK
@@ -67,7 +67,7 @@ rock_small_2:
   Pack:
     model: sasquatch:item/rock_small_2
   Components:
-    item_model: nexo:rock_small_2
+    item_model: sasquatch:rock_small_2
   Mechanics:
     custom_block:
       type: STRINGBLOCK
@@ -88,7 +88,7 @@ rock_small_3:
   Pack:
     model: sasquatch:item/rock_small_3
   Components:
-    item_model: nexo:rock_small_3
+    item_model: sasquatch:rock_small_3
   Mechanics:
     custom_block:
       type: STRINGBLOCK
