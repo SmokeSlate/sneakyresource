@@ -113,6 +113,20 @@ By default this uses:
 
 Set `self-update.branch` to any published branch you want this server to follow. The `{branch}` placeholder is expanded in all three self-update URLs, so branch switches do not require editing each URL separately.
 
+GitHub Actions publishes different dist branches automatically:
+
+- `main` publishes to `pack-dist`
+- a pushed branch like `feature/nexo-fix` publishes to `pack-dist-branch-feature-nexo-fix`
+- a same-repo pull request like `#42` publishes to `pack-dist-pr-42`
+
+Those dist branches contain:
+
+- `sneakyresource.jar`
+- `sneakyresource.jar.sha1`
+- `build-info.properties`
+- `sasquatchresourcepack.zip`
+- `sasquatchresourcepack.zip.sha1`
+
 Paper recommends staging updated plugin jars in the configured update folder and applying them on restart:
 
 - [Updating | PaperMC Docs](https://docs.papermc.io/paper/updating/)

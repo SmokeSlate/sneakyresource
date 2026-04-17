@@ -2,8 +2,8 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
+    branches-ignore:
+      - pack-dist*
     tags:
       - "v*"
   pull_request:
@@ -23,18 +23,53 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build plugin
         run: chmod +x ./gradlew && ./gradlew build
-      - name: Package resource pack
+      - name: Prepare dist payload
         run: |
           mkdir -p dist
+          cp build/libs/*.jar dist/sneakyresource.jar
+          cp build/resources/main/build-info.properties dist/build-info.properties
           cd sasquatchresourcepack
           zip -r ../dist/sasquatchresourcepack.zip . -x "*.DS_Store"
+      - name: Write plugin sha1
+        run: sha1sum dist/sneakyresource.jar > dist/sneakyresource.jar.sha1
       - name: Write resource pack sha1
         run: sha1sum dist/sasquatchresourcepack.zip > dist/sasquatchresourcepack.zip.sha1
+      - name: Compute dist branch
+        id: dist-branch
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          should_publish=true
+          if [[ "$EVENT_NAME" == "pull_request" && "$PR_HEAD_REPO" != "$REPOSITORY" ]]; then
+            should_publish=false
+          fi
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            dist_branch="pack-dist-pr-${PR_NUMBER}"
+          elif [[ "$REF_NAME" == "main" ]]; then
+            dist_branch="pack-dist"
+          elif [[ -n "$REF_NAME" ]]; then
+            slug="$(printf '%s' "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g; s#-+#-#g; s#^-##; s#-$##')"
+            dist_branch="pack-dist-branch-${slug}"
+          else
+            should_publish=false
+            dist_branch=""
+          fi
+
+          echo "should_publish=${should_publish}" >> "$GITHUB_OUTPUT"
+          echo "dist_branch=${dist_branch}" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: sneakyresource-build
           path: |
-            build/libs/*.jar
+            dist/sneakyresource.jar
+            dist/sneakyresource.jar.sha1
+            dist/build-info.properties
             dist/sasquatchresourcepack.zip
             dist/sasquatchresourcepack.zip.sha1
           if-no-files-found: error
@@ -43,7 +78,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/libs/*.jar
+            dist/sneakyresource.jar
+            dist/sneakyresource.jar.sha1
+            dist/build-info.properties
             dist/sasquatchresourcepack.zip
             dist/sasquatchresourcepack.zip.sha1
           generate_release_notes: true
@@ -56,11 +93,11 @@ jobs:
         with:
           path: dist
       - name: Publish resource pack branch
-        if: github.ref == 'refs/heads/main'
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && steps.dist-branch.outputs.should_publish == 'true' }}
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: pack-dist
+          publish_branch: ${{ steps.dist-branch.outputs.dist_branch }}
           publish_dir: ./dist
 
   deploy-pages:
