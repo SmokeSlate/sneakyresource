@@ -16,8 +16,8 @@ resource-pack:
   retry-if-pending-ticks: 100
   self-hosted:
     enabled: true
-    public-base-url: "http://sneakysasquatch.minekeep.dev:2053"
-    scheme: "http"
+    public-base-url: "https://sneakysasquatch.minekeep.dev:2053"
+    scheme: "https"
     hostname: "sneakysasquatch.minekeep.dev"
     public-port: 2053
     port: 2053

@@ -54,12 +54,12 @@ The plugin jar will be in `build/libs/`.
 
 ## Resource Pack Delivery
 
-By default the plugin self-hosts the generated pack from its embedded HTTP server:
+By default the plugin self-hosts the generated pack through the public `https://...:2053` endpoint in front of its embedded HTTP server:
 
 - `resource-pack.self-hosted.enabled: true`
-- `resource-pack.self-hosted.public-base-url: "http://sneakysasquatch.minekeep.dev:2053"`
+- `resource-pack.self-hosted.public-base-url: "https://sneakysasquatch.minekeep.dev:2053"`
 
-If you terminate TLS in a reverse proxy, set `resource-pack.self-hosted.public-base-url` to the external `https://...` URL and leave the embedded server on its internal bind port. The embedded server itself only speaks HTTP.
+If you terminate TLS in a reverse proxy, set `resource-pack.self-hosted.public-base-url` to the external `https://...` URL and leave the embedded server on its internal bind port. The embedded server itself still only speaks HTTP.
 
 If you prefer, you can still disable `resource-pack.self-hosted.enabled` and set your own `resource-pack.public-url` and `resource-pack.sha1-url` in `plugins/SneakyResource/config.yml`.
 

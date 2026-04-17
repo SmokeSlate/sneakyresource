@@ -243,7 +243,7 @@ final class SyncService {
         final String configuredPath = this.plugin.getConfig().getString(pathKey, "").trim();
         final String normalizedPath = configuredPath.startsWith("/") ? configuredPath : "/" + configuredPath;
         if (!publicBaseUrl.isBlank()) {
-            return joinUrl(publicBaseUrl, normalizedPath);
+            return joinUrl(normalizePublicBaseUrl(publicBaseUrl), normalizedPath);
         }
 
         final String hostname = this.plugin.getConfig().getString("resource-pack.self-hosted.hostname", "").trim();
@@ -262,6 +262,30 @@ final class SyncService {
 
     private String joinUrl(final String baseUrl, final String normalizedPath) {
         return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) + normalizedPath : baseUrl + normalizedPath;
+    }
+
+    private String normalizePublicBaseUrl(final String baseUrl) {
+        try {
+            final URI uri = URI.create(baseUrl);
+            final String scheme = uri.getScheme();
+            final int port = uri.getPort();
+            if ("http".equalsIgnoreCase(scheme) && isHttpsOnlyPublicPort(port)) {
+                return "https://" + uri.getRawAuthority() + normalizedRawPath(uri);
+            }
+        } catch (IllegalArgumentException exception) {
+            this.plugin.getLogger().warning("Invalid resource-pack.self-hosted.public-base-url: " + baseUrl);
+        }
+
+        return baseUrl;
+    }
+
+    private String normalizedRawPath(final URI uri) {
+        final String path = uri.getRawPath();
+        return path == null || path.isBlank() ? "" : path;
+    }
+
+    private boolean isHttpsOnlyPublicPort(final int port) {
+        return port == 2053 || port == 2083 || port == 2087 || port == 2096 || port == 8443;
     }
 
     private String portSegment(final String scheme, final int port) {
