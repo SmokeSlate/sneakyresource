@@ -12,6 +12,8 @@ cashe:
       type: NOTEBLOCK
       custom_variation: 1
       model: sasquatch:block/cashe
+      directional:
+        type: FURNACE
       storage:
         type: STORAGE
         rows: 3
