@@ -38,7 +38,7 @@
           "texture": "#left"
         },
         "up": {
-          "uv": [16, 16, 0, 0],
+          "uv": [0, 0, 16, 16],
           "texture": "#top"
         },
         "down": {
