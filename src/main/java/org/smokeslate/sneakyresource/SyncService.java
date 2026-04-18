@@ -39,7 +39,7 @@ final class SyncService {
         final FileConfiguration config = this.plugin.getConfig();
         final boolean usingNexo = this.plugin.isNexoIntegrationActive();
         final boolean syncResourcePack = config.getBoolean("resource-pack.enabled", true) && !usingNexo;
-        final boolean syncDatapack = config.getBoolean("datapack.enabled", true) && !usingNexo;
+        final boolean syncDatapack = config.getBoolean("datapack.enabled", true);
         final boolean runReload = allowReload && config.getBoolean("run-minecraft-reload-after-sync", true);
 
         Path packZip = null;
@@ -49,7 +49,6 @@ final class SyncService {
 
         if (usingNexo) {
             syncNexoAssets();
-            deleteManagedDirectoryIfConfigured("datapack.destination-directory");
             if (runReload) {
                 Bukkit.getScheduler().runTask(this.plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "nexo reload"));
             }
@@ -166,16 +165,6 @@ final class SyncService {
         }
 
         mirrorDirectory(source, destination);
-    }
-
-    private void deleteManagedDirectoryIfConfigured(final String pathKey) throws IOException {
-        final String configured = this.plugin.getConfig().getString(pathKey, "").trim();
-        if (configured.isBlank()) {
-            return;
-        }
-
-        final Path path = resolveConfiguredPath(pathKey);
-        deleteManagedDirectory(path);
     }
 
     private void deleteManagedDirectory(final Path path) throws IOException {
