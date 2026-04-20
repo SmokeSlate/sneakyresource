@@ -1,0 +1,108 @@
+cashe:
+  itemname: "<red>Cashe"
+  material: PAPER
+  lore:
+    - "<gray>Custom container item for 1.21.11+"
+  Pack:
+    model: sasquatch:item/cashe
+  Components:
+    item_model: sasquatch:cashe
+  Mechanics:
+    custom_block:
+      type: NOTEBLOCK
+      custom_variation: 1
+      model: sasquatch:block/cashe_placed
+      directional:
+        type: FURNACE
+      storage:
+        type: STORAGE
+        rows: 3
+        title: "<red>Cashe"
+      drop:
+        loots:
+          - nexo_item: cashe
+            probability: 1.0
+
+rock:
+  itemname: "<gray>Rock"
+  material: PAPER
+  lore:
+    - "<dark_gray>Decorative stone"
+  Pack:
+    model: sasquatch:item/rock
+  Components:
+    item_model: sasquatch:rock
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 1
+      model: sasquatch:block/rock
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock
+            probability: 1.0
+
+rock_small_1:
+  itemname: "<gray>Small Rock 1"
+  material: PAPER
+  lore:
+    - "<dark_gray>Decorative stone"
+  Pack:
+    model: sasquatch:item/rock_small_1
+  Components:
+    item_model: sasquatch:rock_small_1
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 2
+      model: sasquatch:block/rock_small_1
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock_small_1
+            probability: 1.0
+
+rock_small_2:
+  itemname: "<gray>Small Rock 2"
+  material: PAPER
+  lore:
+    - "<dark_gray>Decorative stone"
+  Pack:
+    model: sasquatch:item/rock_small_2
+  Components:
+    item_model: sasquatch:rock_small_2
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 3
+      model: sasquatch:block/rock_small_2
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock_small_2
+            probability: 1.0
+
+rock_small_3:
+  itemname: "<gray>Small Rock 3"
+  material: PAPER
+  lore:
+    - "<dark_gray>Decorative stone"
+  Pack:
+    model: sasquatch:item/rock_small_3
+  Components:
+    item_model: sasquatch:rock_small_3
+  Mechanics:
+    custom_block:
+      type: STRINGBLOCK
+      custom_variation: 4
+      model: sasquatch:block/rock_small_3
+      hardness: 1
+      requires_supporting: true
+      drop:
+        loots:
+          - nexo_item: rock_small_3
+            probability: 1.0

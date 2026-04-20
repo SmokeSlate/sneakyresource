@@ -5,6 +5,7 @@ api-version: '1.21.8'
 authors: [SmokeSlate]
 website: https://github.com/SmokeSlate/sneakyresource
 description: Syncs a resource pack zip and datapack folder into Paper server paths.
+softdepend: [Nexo]
 permissions:
   sneakyresource.sync:
     default: op

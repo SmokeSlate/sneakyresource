@@ -1,0 +1,23 @@
+rock:
+  result:
+    nexo_item: rock
+  input:
+    minecraft_type: COBBLESTONE
+
+rock_small_1:
+  result:
+    nexo_item: rock_small_1
+  input:
+    minecraft_type: COBBLESTONE
+
+rock_small_2:
+  result:
+    nexo_item: rock_small_2
+  input:
+    minecraft_type: COBBLESTONE
+
+rock_small_3:
+  result:
+    nexo_item: rock_small_3
+  input:
+    minecraft_type: COBBLESTONE

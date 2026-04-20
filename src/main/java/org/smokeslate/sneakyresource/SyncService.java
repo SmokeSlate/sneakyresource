@@ -37,7 +37,8 @@ final class SyncService {
 
     SyncReport syncAll(final boolean allowReload) throws IOException {
         final FileConfiguration config = this.plugin.getConfig();
-        final boolean syncResourcePack = config.getBoolean("resource-pack.enabled", true);
+        final boolean usingNexo = this.plugin.isNexoIntegrationActive();
+        final boolean syncResourcePack = config.getBoolean("resource-pack.enabled", true) && !usingNexo;
         final boolean syncDatapack = config.getBoolean("datapack.enabled", true);
         final boolean runReload = allowReload && config.getBoolean("run-minecraft-reload-after-sync", true);
 
@@ -45,6 +46,13 @@ final class SyncService {
         String sha1 = null;
         String resourcePackUrl = null;
         Path datapackDestination = null;
+
+        if (usingNexo) {
+            syncNexoAssets();
+            if (runReload) {
+                Bukkit.getScheduler().runTask(this.plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "nexo reload"));
+            }
+        }
 
         if (syncResourcePack) {
             final Path resourcePackSource = resolveSourceDirectory(
@@ -91,6 +99,28 @@ final class SyncService {
         return new SyncReport(packZip, sha1, resourcePackUrl, datapackDestination, runReload);
     }
 
+    private void syncNexoAssets() throws IOException {
+        final Path nexoSource = resolveSourceDirectory(
+            "nexo.source-directory",
+            "bundled/nexo/",
+            "bundled/nexo"
+        );
+        final Path nexoRoot = resolveConfiguredPath("nexo.root-directory");
+
+        syncManagedDirectory(nexoSource.resolve("items"), nexoRoot.resolve("items").resolve("sneakyresource"));
+        syncManagedDirectory(nexoSource.resolve("recipes").resolve("shaped"), nexoRoot.resolve("recipes").resolve("shaped").resolve("sneakyresource"));
+        syncManagedDirectory(nexoSource.resolve("recipes").resolve("stonecutting"), nexoRoot.resolve("recipes").resolve("stonecutting").resolve("sneakyresource"));
+        final Path externalPackRoot = nexoRoot.resolve("pack").resolve("external_packs").resolve("sasquatchresourcepack");
+        deleteManagedDirectory(externalPackRoot);
+
+        final Path resourcePackSource = resolveSourceDirectory(
+            "resource-pack.source-directory",
+            "bundled/resourcepack/",
+            "bundled/resourcepack"
+        );
+        syncManagedDirectory(resourcePackSource, externalPackRoot);
+    }
+
     private Path resolveConfiguredPath(final String pathKey) {
         final String configured = this.plugin.getConfig().getString(pathKey);
         if (configured == null || configured.isBlank()) {
@@ -127,6 +157,19 @@ final class SyncService {
         if (!Files.isDirectory(path)) {
             throw new IllegalStateException(label + " must point to an existing directory: " + path);
         }
+    }
+
+    private void syncManagedDirectory(final Path source, final Path destination) throws IOException {
+        if (!Files.isDirectory(source)) {
+            return;
+        }
+
+        mirrorDirectory(source, destination);
+    }
+
+    private void deleteManagedDirectory(final Path path) throws IOException {
+        validateDestination(path);
+        deleteRecursively(path);
     }
 
     private void ensureParentDirectory(final Path path) throws IOException {

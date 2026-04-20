@@ -1,9 +1,5 @@
 {
-  "gui_light": "front",
-  "textures": {
-    "0": "sasquatch:block/cashe",
-    "particle": "sasquatch:block/cashe"
-  },
+  "parent": "sasquatch:block/cashe",
   "display": {
     "thirdperson_righthand": {
       "rotation": [75, 45, 0],
@@ -39,37 +35,5 @@
       "translation": [0, 0, 0],
       "scale": [0.5, 0.5, 0.5]
     }
-  },
-  "elements": [
-    {
-      "from": [-4, 1, 1],
-      "to": [20, 15, 15],
-      "faces": {
-        "north": {
-          "uv": [0, 0, 23, 14],
-          "texture": "#0"
-        },
-        "east": {
-          "uv": [0, 28, 14, 42],
-          "texture": "#0"
-        },
-        "south": {
-          "uv": [0, 14, 23, 28],
-          "texture": "#0"
-        },
-        "west": {
-          "uv": [14, 28, 28, 42],
-          "texture": "#0"
-        },
-        "up": {
-          "uv": [46, 14, 23, 0],
-          "texture": "#0"
-        },
-        "down": {
-          "uv": [46, 14, 23, 28],
-          "texture": "#0"
-        }
-      }
-    }
-  ]
+  }
 }

@@ -7,8 +7,10 @@ The plugin reads the repo checkout directly from disk, then:
 - zips `sasquatchresourcepack/` into a server-ready pack zip
 - writes a SHA-1 file for that zip
 - mirrors `datapack/` into your Paper world datapacks folder
-- places custom `Cashe` and rock blocks by reserving specific vanilla block states
-- runs `minecraft:reload` after syncing
+- syncs the Nexo item/recipe configs for custom blocks when Nexo is installed
+- stages `sasquatchresourcepack/` into Nexo's `pack/external_packs/sasquatchresourcepack/` when Nexo is installed
+- expects Nexo to own `Cashe` and rock item/block behaviour entirely
+- runs `nexo reload` and `minecraft:reload` after syncing
 
 If no external `sneakyresource/` checkout exists, the plugin falls back to the bundled pack and datapack that are shipped inside the jar.
 
@@ -34,7 +36,9 @@ With that layout:
 
 - `SneakySasquatch/sasquatchresourcepack` is the resource pack source
 - `SneakySasquatch/datapack` is the datapack source
+- `SneakySasquatch/nexo` is the Nexo config source
 - `world/datapacks/sneakyresource` is the live server datapack destination
+- `plugins/Nexo` is the Nexo root used for synced items, recipes, and pack assets
 
 The plugin also falls back to the older sibling layout automatically:
 
@@ -72,10 +76,14 @@ For fully local hosting, upload the jar and restart the server. The plugin will 
 
 ## Custom Blocks
 
-Custom placed `Cashe` and rocks use reserved vanilla block states rendered by the bundled resource pack:
+When Nexo is installed and `nexo.enabled: true`, SneakyResource treats Nexo as the only source of truth for this custom block set:
 
-- `Cashe` uses a reserved `jigsaw` orientation
-- rocks use reserved `pink_petals` states
+- `nexo/items/sasquatch_blocks.yml` defines `cashe`, `rock`, `rock_small_1`, `rock_small_2`, and `rock_small_3`
+- `nexo/recipes/` defines the crafting recipes for those Nexo items
+- `sasquatchresourcepack/` is staged into `plugins/Nexo/pack/external_packs/sasquatchresourcepack/`
+- `cashe` uses Nexo's built-in `storage` sub-mechanic, so container state is managed by Nexo rather than this plugin
+
+If Nexo is not installed, these custom items/blocks are unavailable.
 
 This build targets Paper `1.21.11`.
 
@@ -90,12 +98,31 @@ This build targets Paper `1.21.11`.
 
 By default this uses:
 
-- `self-update.jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar"`
-- `self-update.jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/sneakyresource.jar.sha1"`
-- `self-update.build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/pack-dist/build-info.properties"`
-- `self-update.run-on-startup: true`
+- `self-update.branch: "pack-dist"`
+- `self-update.jar-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar"`
+- `self-update.jar-sha1-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/sneakyresource.jar.sha1"`
+- `self-update.build-info-url: "https://github.com/SmokeSlate/sneakyresource/raw/refs/heads/{branch}/build-info.properties"`
+- `self-update.run-on-startup: false`
 - `self-update.sync-when-unchanged: true`
 - `self-update.restart-after-update: true`
+
+Set `self-update.branch` to any published branch you want this server to follow. The `{branch}` placeholder is expanded in all three self-update URLs, so branch switches do not require editing each URL separately.
+
+When a new jar is downloaded, SneakyResource now defers sync until after restart. That avoids running post-update sync logic from the old in-memory plugin classes before Paper has actually loaded the new jar.
+
+GitHub Actions publishes different dist branches automatically:
+
+- `main` publishes to `pack-dist`
+- a pushed branch like `feature/nexo-fix` publishes to `pack-dist-branch-feature-nexo-fix`
+- a same-repo pull request like `#42` publishes to `pack-dist-pr-42`
+
+Those dist branches contain:
+
+- `sneakyresource.jar`
+- `sneakyresource.jar.sha1`
+- `build-info.properties`
+- `sasquatchresourcepack.zip`
+- `sasquatchresourcepack.zip.sha1`
 
 Paper recommends staging updated plugin jars in the configured update folder and applying them on restart:
 

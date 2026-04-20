@@ -5,7 +5,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +15,6 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     private SyncService syncService;
     private SelfUpdateService selfUpdateService;
     private ResourcePackHttpServer resourcePackHttpServer;
-    private CustomBlockService customBlockService;
     private SyncReport lastReport;
     private SelfUpdateReport lastSelfUpdateReport;
 
@@ -28,20 +26,20 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         this.syncService = new SyncService(this);
         this.selfUpdateService = new SelfUpdateService(this);
         this.resourcePackHttpServer = new ResourcePackHttpServer(this);
-        this.customBlockService = createCustomBlockService();
 
         try {
             this.resourcePackHttpServer.start();
         } catch (IOException exception) {
             getLogger().severe("Failed to start self-hosted resource pack server: " + exception.getMessage());
         }
+        if (getConfig().getBoolean("nexo.enabled", true) && !isNexoIntegrationActive()) {
+            getLogger().warning("Nexo is not installed or not enabled. SneakyResource will not provide custom items/blocks without Nexo.");
+        }
 
         final PluginCommand command = Objects.requireNonNull(getCommand("sneakyresource"), "sneakyresource command is missing from plugin.yml");
         command.setExecutor(this);
         command.setTabCompleter(new SneakyResourceTabCompleter());
         getServer().getPluginManager().registerEvents(new PlayerResourcePackListener(this), this);
-        getServer().getPluginManager().registerEvents(this.customBlockService, this);
-        this.customBlockService.load();
 
         if (getConfig().getBoolean("self-update.run-on-startup", false)) {
             getServer().getScheduler().runTaskAsynchronously(this, () -> runSelfUpdateTask(null, true));
@@ -52,9 +50,6 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
 
     @Override
     public void onDisable() {
-        if (this.customBlockService != null) {
-            this.customBlockService.save();
-        }
         if (this.resourcePackHttpServer != null) {
             this.resourcePackHttpServer.stop();
         }
@@ -87,13 +82,6 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         } catch (IOException exception) {
             getLogger().warning("Failed to restart self-hosted resource pack server: " + exception.getMessage());
         }
-        if (this.customBlockService != null) {
-            this.customBlockService.save();
-            HandlerList.unregisterAll(this.customBlockService);
-        }
-        this.customBlockService = createCustomBlockService();
-        getServer().getPluginManager().registerEvents(this.customBlockService, this);
-        this.customBlockService.load();
         sender.sendMessage(Component.text("SneakyResource config reloaded."));
     }
 
@@ -119,6 +107,10 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         if (currentCommit != null && !currentCommit.isBlank()) {
             sender.sendMessage(Component.text("Build commit: " + shortCommit(currentCommit)));
         }
+        final String currentBranch = this.selfUpdateService.currentBuildBranch();
+        if (currentBranch != null && !currentBranch.isBlank() && !"unknown".equalsIgnoreCase(currentBranch)) {
+            sender.sendMessage(Component.text("Build branch: " + currentBranch));
+        }
 
         if (this.lastReport == null) {
             sender.sendMessage(Component.text("No sync has run yet."));
@@ -138,7 +130,8 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
             }
         }
 
-        sender.sendMessage(Component.text("Custom block integration: " + this.customBlockService.integrationName()));
+        sender.sendMessage(Component.text("Custom block integration: " + (isNexoIntegrationActive() ? "Nexo-managed" : "Unavailable")));
+        sender.sendMessage(Component.text("Self-update branch: " + this.selfUpdateService.configuredUpdateBranch()));
 
         if (this.lastSelfUpdateReport == null) {
             sender.sendMessage(Component.text("No self-update has run yet."));
@@ -246,7 +239,8 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
     }
 
     boolean shouldSendResourcePack() {
-        return getConfig().getBoolean("resource-pack.enabled", true)
+        return !isNexoIntegrationActive()
+            && getConfig().getBoolean("resource-pack.enabled", true)
             && getConfig().getBoolean("resource-pack.send-on-join", true);
     }
 
@@ -290,7 +284,8 @@ public final class SneakyResourcePlugin extends JavaPlugin implements CommandExe
         return null;
     }
 
-    private CustomBlockService createCustomBlockService() {
-        return new ReservedStateCustomBlockService(this);
+    boolean isNexoIntegrationActive() {
+        return getConfig().getBoolean("nexo.enabled", true)
+            && getServer().getPluginManager().isPluginEnabled("Nexo");
     }
 }
